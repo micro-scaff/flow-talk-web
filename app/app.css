@@ -5,11 +5,461 @@
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+:root {
+  --app-bg: #f0f2f5;
+  --app-bg-strong: #ffffff;
+  --app-text: #152033;
+  --app-muted: #667085;
+  --app-border: rgba(24, 119, 242, 0.16);
+  --app-primary: #1877f2;
+  --app-primary-strong: #0f5fd2;
+  --app-accent: #16a34a;
+  --app-panel: rgba(255, 255, 255, 0.82);
+  --app-panel-solid: #ffffff;
+  --app-shadow: 0 24px 70px rgba(15, 36, 69, 0.14);
+  --app-soft-shadow: 0 16px 45px rgba(24, 119, 242, 0.12);
+}
+
+:root[data-theme="dark"] {
+  --app-bg: #0b1220;
+  --app-bg-strong: #111a2d;
+  --app-text: #eef4ff;
+  --app-muted: #9fb0c8;
+  --app-border: rgba(122, 169, 255, 0.2);
+  --app-primary: #4c8dff;
+  --app-primary-strong: #76a8ff;
+  --app-accent: #4ade80;
+  --app-panel: rgba(17, 26, 45, 0.86);
+  --app-panel-solid: #121b2f;
+  --app-shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
+  --app-soft-shadow: 0 16px 45px rgba(76, 141, 255, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--font-sans);
+}
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+body {
+  min-height: 100svh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.auth-page {
+  min-height: 100svh;
+  overflow-x: hidden;
+  background:
+    linear-gradient(135deg, rgba(24, 119, 242, 0.12), transparent 34%),
+    linear-gradient(225deg, rgba(22, 163, 74, 0.1), transparent 34%),
+    var(--app-bg);
+}
+
+.auth-hero {
+  display: flex;
+  min-height: 100svh;
+  width: min(1180px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 24px 0;
+  flex-direction: column;
+}
+
+.auth-topbar {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand-mark {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-primary);
+  box-shadow: var(--app-soft-shadow);
+  color: #ffffff;
+  font-weight: 800;
+  place-items: center;
+}
+
+.theme-toggle {
+  box-shadow: var(--app-soft-shadow);
+}
+
+.auth-grid {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 48px;
+  align-items: center;
+  padding: 36px 0 28px;
+}
+
+.brand-panel {
+  display: grid;
+  gap: 36px;
+}
+
+.auth-eyebrow {
+  color: var(--app-primary);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.brand-title.ant-typography {
+  margin: 0;
+  color: var(--app-primary);
+  font-size: 64px;
+  line-height: 1;
+}
+
+.brand-copy.ant-typography {
+  max-width: 560px;
+  margin: 0;
+  color: var(--app-muted);
+  font-size: 22px;
+  line-height: 1.55;
+}
+
+.auth-card-zone {
+  width: 100%;
+}
+
+.form-title.ant-typography {
+  margin: 0 0 18px;
+  color: var(--app-text);
+  font-size: 28px;
+  line-height: 1.25;
+}
+
+.auth-card.ant-card {
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-panel);
+  box-shadow: var(--app-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.auth-card .ant-card-body {
+  padding: 28px;
+}
+
+.auth-card .ant-form-item-label > label {
+  color: var(--app-text);
+  font-weight: 700;
+}
+
+.auth-card .ant-btn {
+  min-height: 44px;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.auth-card .ant-btn-primary {
+  background: var(--app-primary);
+  box-shadow: 0 10px 24px rgba(24, 119, 242, 0.26);
+}
+
+.secondary-action.ant-btn {
+  border-color: rgba(22, 163, 74, 0.24);
+  color: var(--app-accent);
+}
+
+.link-action.ant-btn {
+  margin-top: 16px;
+  border-color: var(--app-border);
+}
+
+.auth-success {
+  display: grid;
+  gap: 4px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(22, 163, 74, 0.24);
+  border-radius: 8px;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.chat-preview {
+  width: min(100%, 520px);
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.42), transparent),
+    var(--app-panel-solid);
+  box-shadow: var(--app-shadow);
+  overflow: hidden;
+}
+
+.chat-preview-header {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.chat-preview-header strong,
+.chat-preview-header span,
+.chat-author,
+.chat-message p,
+.chat-message time {
+  display: block;
+}
+
+.chat-preview-header strong {
+  color: var(--app-text);
+  font-size: 16px;
+}
+
+.chat-preview-header span {
+  margin-top: 4px;
+  color: var(--app-muted);
+  font-size: 13px;
+}
+
+.online-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--app-accent);
+  box-shadow: 0 0 0 6px rgba(22, 163, 74, 0.14);
+}
+
+.chat-message-list {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  background:
+    linear-gradient(90deg, rgba(24, 119, 242, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(24, 119, 242, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.chat-message {
+  max-width: 82%;
+  padding: 12px 14px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-panel-solid);
+  box-shadow: 0 10px 28px rgba(15, 36, 69, 0.08);
+}
+
+.chat-message.is-right {
+  justify-self: end;
+  border-color: rgba(24, 119, 242, 0.28);
+  background: var(--app-primary);
+  color: #ffffff;
+}
+
+.chat-author {
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chat-message.is-right .chat-author,
+.chat-message.is-right time {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.chat-message p {
+  margin: 5px 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.chat-message time {
+  color: var(--app-muted);
+  font-size: 12px;
+}
+
+@media (max-width: 860px) {
+  .auth-hero {
+    width: min(100% - 28px, 560px);
+    padding: 18px 0;
+  }
+
+  .auth-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    align-items: start;
+    padding: 28px 0;
+  }
+
+  .brand-panel {
+    gap: 22px;
+  }
+
+  .brand-title.ant-typography {
+    font-size: 46px;
+  }
+
+  .brand-copy.ant-typography {
+    font-size: 18px;
+  }
+
+  .auth-card-zone {
+    max-width: 520px;
+  }
+}
+
+@media (max-width: 520px) {
+  html,
+  body {
+    min-width: 0;
+  }
+
+  .auth-page {
+    min-height: 100dvh;
+  }
+
+  .auth-hero {
+    min-height: 100dvh;
+    width: min(100% - 24px, 420px);
+    padding: 14px 0 24px;
+  }
+
+  .auth-topbar {
+    min-height: 40px;
+  }
+
+  .brand-mark {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .theme-toggle.ant-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .auth-grid {
+    gap: 20px;
+    padding: 22px 0 0;
+  }
+
+  .brand-panel {
+    display: contents;
+  }
+
+  .brand-copy-block {
+    order: 1;
+    gap: 12px;
+  }
+
+  .auth-card-zone {
+    order: 2;
+  }
+
+  .chat-preview {
+    order: 3;
+    margin-top: 4px;
+  }
+
+  .auth-eyebrow {
+    font-size: 12px;
+  }
+
+  .brand-title.ant-typography {
+    font-size: 40px;
+  }
+
+  .brand-copy.ant-typography {
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  .form-title.ant-typography {
+    margin-bottom: 14px;
+    font-size: 23px;
+  }
+
+  .auth-card.ant-card {
+    width: 100%;
+  }
+
+  .auth-card .ant-card-body {
+    padding: 18px;
+  }
+
+  .auth-card .ant-form-item {
+    margin-bottom: 16px;
+  }
+
+  .auth-card .ant-input,
+  .auth-card .ant-input-affix-wrapper,
+  .auth-card .ant-btn {
+    min-height: 44px;
+  }
+
+  .chat-preview {
+    max-height: 310px;
+  }
+
+  .chat-preview-header,
+  .chat-message-list {
+    padding: 14px;
+  }
+
+  .chat-preview-header {
+    min-height: 58px;
+  }
+
+  .chat-message-list {
+    gap: 10px;
+    background-size: 22px 22px;
+  }
+
+  .chat-message {
+    max-width: 90%;
+    padding: 10px 12px;
+  }
+
+  .chat-message p {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .auth-hero {
+    width: min(100% - 16px, 360px);
+  }
+
+  .brand-title.ant-typography {
+    font-size: 34px;
+  }
+
+  .brand-copy.ant-typography {
+    font-size: 15px;
+  }
+
+  .form-title.ant-typography {
+    font-size: 21px;
+  }
+
+  .auth-card .ant-card-body {
+    padding: 16px;
+  }
+
+  .chat-preview {
+    max-height: 280px;
   }
 }

@@ -6,11 +6,19 @@ import {
   Scripts,
   ScrollRestoration
 } from "react-router";
+import type {
+  ReactElement,
+  ReactNode
+} from "react";
 
 import type {
   Route
 } from "./+types/root";
+import "antd/dist/reset.css";
 import "./app.css";
+import {
+  ThemeProvider
+} from "./hooks/use-theme-hook";
 
 export const links: Route.LinksFunction = () => {
   return [
@@ -32,9 +40,11 @@ export const links: Route.LinksFunction = () => {
 
 export function Layout({
   children
-}: { children: React.ReactNode }) {
+}: { children: ReactNode }): ReactElement {
   return (
-    <html lang="en">
+    <html
+      lang="zh-CN"
+      suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
 
@@ -55,13 +65,17 @@ export function Layout({
   );
 }
 
-export default function App() {
-  return <Outlet />;
+export default function App(): ReactElement {
+  return (
+    <ThemeProvider>
+      <Outlet />
+    </ThemeProvider>
+  );
 }
 
 export function ErrorBoundary({
   error
-}: Route.ErrorBoundaryProps) {
+}: Route.ErrorBoundaryProps): ReactElement {
   let message = "Oops!";
 
   let details = "An unexpected error occurred.";
@@ -75,8 +89,12 @@ export function ErrorBoundary({
         ? "The requested page could not be found."
         : error.statusText || details;
   } else if (import.meta.env.DEV && error && error instanceof Error) {
+    const {
+      stack: errorStack
+    } = error;
+
     details = error.message;
-    stack = error.stack;
+    stack = errorStack;
   }
 
   return (

@@ -10,11 +10,11 @@
     "fix": "eslint \"./**/*.{css,tsx,vue,ts,js,html}\" --fix"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.3.2",
     "@mt-kit/react-ant-design-extra": "^1.4.1",
     "@mt-kit/react-hooks": "^1.1.1",
-    "@mt-kit/react-rc": "^1.0.0",
     "@mt-kit/request-axios": "^1.7.1",
-    "@mt-kit/utils": "^1.7.0",
+    "@mt-kit/utils": "^1.8.0",
     "@react-router/node": "8.0.0",
     "@react-router/serve": "8.0.0",
     "antd": "^6.5.0",

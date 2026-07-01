@@ -7,11 +7,23 @@ import {
 } from "vite";
 
 export default defineConfig({
+  optimizeDeps: {
+    include: [
+      "@mt-kit/request-axios",
+      "@mt-kit/utils"
+    ]
+  },
   plugins: [
     tailwindcss(),
     reactRouter()
   ],
   resolve: {
     tsconfigPaths: true
+  },
+  ssr: {
+    noExternal: [
+      "@mt-kit/request-axios",
+      "@mt-kit/utils"
+    ]
   }
 });
