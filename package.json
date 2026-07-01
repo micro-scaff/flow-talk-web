@@ -6,7 +6,8 @@
     "build": "react-router build",
     "dev": "react-router dev",
     "start": "react-router-serve ./build/server/index.js",
-    "typecheck": "react-router typegen && tsc"
+    "typecheck": "react-router typegen && tsc",
+     "fix": "eslint \"./**/*.{css,tsx,vue,ts,js,html}\" --fix"
   },
   "dependencies": {
     "@react-router/node": "8.0.0",
@@ -17,11 +18,13 @@
     "react-router": "8.0.0"
   },
   "devDependencies": {
+    "@mt-kit/eslint-config": "^3.1.0",
     "@react-router/dev": "8.0.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^22",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "eslint": "^10.6.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.9.3",
     "vite": "^8.0.3"
