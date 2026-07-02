@@ -1,11 +1,28 @@
+import type {
+  ReactElement
+} from "react";
 import {
   redirect
 } from "react-router";
 
-export function loader(): Response {
-  return redirect("/login");
-}
+import {
+  getSession
+} from "~/utils";
 
-export default function Home(): null {
+function clientLoader(): Response | null {
+  const session = getSession();
+
+  if (!session?.token) {
+    return redirect("/login");
+  }
+
   return null;
 }
+
+clientLoader.hydrate = true as const;
+
+export default function Home(): ReactElement {
+  return <>111</>;
+}
+
+export { clientLoader };

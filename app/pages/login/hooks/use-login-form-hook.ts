@@ -8,6 +8,9 @@ import type {
 import {
   useState
 } from "react";
+import {
+  useNavigate
+} from "react-router";
 
 import {
   dataLogin
@@ -42,6 +45,8 @@ export function useLoginFormHook(): ILoginFormHook {
     setLoading
   ] = useState(false);
 
+  const navigate = useNavigate();
+
   const {
     authResult,
     displayName,
@@ -58,6 +63,9 @@ export function useLoginFormHook(): ILoginFormHook {
       saveSession(response);
       setAuthResult(response);
       message.success("登录成功，欢迎回来");
+      navigate("/", {
+        replace: true
+      });
     } catch {
 
       // 请求错误由 request 响应拦截器统一提示。
