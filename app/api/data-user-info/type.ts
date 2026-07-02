@@ -1,7 +1,11 @@
-import type {
-  IAuthUser
-} from "../data-login/type";
+interface IDataGetCurrentUser {
+  ["auth_source"]?: string;
+  ["avatar_url"]?: string;
+  ["external_id"]?: string;
+  id?: number;
+  nickname?: string;
+  status?: number;
+  username?: string;
+}
 
-type TUserInfoResponse = IAuthUser;
-
-export type { TUserInfoResponse };
+export type { IDataGetCurrentUser };

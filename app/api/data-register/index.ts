@@ -3,27 +3,28 @@ import {
 } from "~/request";
 
 import type {
-  IAuthResponse,
-  IRegisterApiRequest,
-  IRegisterFormValues
+  IDataRegister,
+  IParamsRegister,
+  IParamsRegisterApi
 } from "./type";
 
-function register(payload: IRegisterFormValues): Promise<IAuthResponse> {
+function dataRegister(payload: IParamsRegister): Promise<IDataRegister> {
 
   // 页面表单使用 camelCase，提交给后端时映射为 OpenAPI 中定义的 avatar_url。
-  const apiPayload: IRegisterApiRequest = {
+  const apiPayload: IParamsRegisterApi = {
     "avatar_url": payload.avatarUrl,
     nickname: payload.nickname,
     password: payload.password,
     username: payload.username
   };
 
-  return apiClient.post<IAuthResponse, IRegisterApiRequest>("/api/auth/register", apiPayload);
+  return apiClient.post<IDataRegister, IParamsRegisterApi>("/api/auth/register", apiPayload);
 }
 
-export { register };
+export { dataRegister };
 
 export type {
-  IRegisterApiRequest,
-  IRegisterFormValues
+  IDataRegister,
+  IParamsRegister,
+  IParamsRegisterApi
 } from "./type";

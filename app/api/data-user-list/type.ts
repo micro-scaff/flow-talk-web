@@ -1,7 +1,9 @@
 import type {
-  IAuthUser
+  IDataLoginUser
 } from "../data-login/type";
 
-type TUserListResponse = IAuthUser[];
+interface IDataListUsers extends Array<IDataLoginUser> {
+  length: number;
+}
 
-export type { TUserListResponse };
+export type { IDataListUsers };

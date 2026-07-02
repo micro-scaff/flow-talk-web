@@ -14,26 +14,26 @@ import {
 } from "react-router";
 
 import type {
-  IRegisterFormValues
+  IParamsRegister
 } from "~/api";
 import {
-  register
+  dataRegister
 } from "~/api";
 import {
   saveSession
 } from "~/utils";
 
 interface IRegisterFormHook {
-  form: FormInstance<IRegisterFormValues>;
-  initialValues: Partial<IRegisterFormValues>;
+  form: FormInstance<IParamsRegister>;
+  initialValues: Partial<IParamsRegister>;
   loading: boolean;
-  onSubmit: (values: IRegisterFormValues) => Promise<void>;
+  onSubmit: (values: IParamsRegister) => Promise<void>;
 }
 
 export function useRegisterFormHook(): IRegisterFormHook {
   const [
     form
-  ] = Form.useForm<IRegisterFormValues>();
+  ] = Form.useForm<IParamsRegister>();
 
   const [
     loading,
@@ -42,7 +42,7 @@ export function useRegisterFormHook(): IRegisterFormHook {
 
   const navigate = useNavigate();
 
-  const initialValues = useMemo<Partial<IRegisterFormValues>>(() => {
+  const initialValues = useMemo<Partial<IParamsRegister>>(() => {
     return {
       avatarUrl: "",
       nickname: ""
@@ -50,11 +50,11 @@ export function useRegisterFormHook(): IRegisterFormHook {
   }, []);
 
   // 注册模块 hook 负责把表单动作串起来，接口字段映射交给 api 层处理。
-  const onSubmit = async (values: IRegisterFormValues): Promise<void> => {
+  const onSubmit = async (values: IParamsRegister): Promise<void> => {
     setLoading(true);
 
     try {
-      const response = await register(values);
+      const response = await dataRegister(values);
 
       saveSession(response);
       message.success("注册成功，已为你创建 Flow Talk 账号");

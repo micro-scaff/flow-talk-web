@@ -1,9 +1,9 @@
-interface ILoginRequest {
+interface IParamsLogin {
   username: string;
   password: string;
 }
 
-interface IAuthUser {
+interface IDataLoginUser {
   ["auth_source"]?: string;
   ["avatar_url"]?: string;
   ["external_id"]?: string;
@@ -13,26 +13,18 @@ interface IAuthUser {
   username?: string;
 }
 
-interface IAuthResponse {
+interface IDataLogin {
   token?: string;
-  user?: IAuthUser;
+  user?: IDataLoginUser;
 }
 
-interface IApiErrorResponse {
-  code?: number;
-  data?: unknown;
-  error?: string;
-  message?: string;
-}
-
-interface IAuthSession extends IAuthResponse {
+interface IAuthSession extends IDataLogin {
   signedAt: string;
 }
 
 export type {
-  IApiErrorResponse,
-  IAuthResponse,
   IAuthSession,
-  IAuthUser,
-  ILoginRequest
+  IDataLogin,
+  IDataLoginUser,
+  IParamsLogin
 };

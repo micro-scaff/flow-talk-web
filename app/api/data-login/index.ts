@@ -3,20 +3,19 @@ import {
 } from "~/request";
 
 import type {
-  IAuthResponse,
-  ILoginRequest
+  IDataLogin,
+  IParamsLogin
 } from "./type";
 
-function login(payload: ILoginRequest): Promise<IAuthResponse> {
-  return apiClient.post<IAuthResponse, ILoginRequest>("/api/auth/login", payload);
+function dataLogin(payload: IParamsLogin): Promise<IDataLogin> {
+  return apiClient.post<IDataLogin, IParamsLogin>("/api/auth/login", payload);
 }
 
 export type {
-  IApiErrorResponse,
-  IAuthResponse,
   IAuthSession,
-  IAuthUser,
-  ILoginRequest
+  IDataLogin,
+  IDataLoginUser,
+  IParamsLogin
 } from "./type";
 
-export { login };
+export { dataLogin };

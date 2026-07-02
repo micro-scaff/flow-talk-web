@@ -2,7 +2,7 @@ import {
   authTokenStorage
 } from "~/request";
 import type {
-  IAuthResponse,
+  IDataLogin,
   IAuthSession
 } from "~/api";
 
@@ -28,7 +28,7 @@ function getSession(): IAuthSession | null {
   }
 }
 
-function saveSession(response: IAuthResponse): void {
+function saveSession(response: IDataLogin): void {
   if (!response.token) {
     return;
   }

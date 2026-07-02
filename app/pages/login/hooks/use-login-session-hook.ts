@@ -3,23 +3,23 @@ import {
 } from "react";
 
 import type {
-  IAuthResponse
+  IDataLogin
 } from "~/api";
 import {
   getSession
 } from "~/utils";
 
 interface ILoginSessionHook {
-  authResult: IAuthResponse | null;
+  authResult: IDataLogin | null;
   displayName: string;
-  setAuthResult: (authResult: IAuthResponse | null) => void;
+  setAuthResult: (authResult: IDataLogin | null) => void;
 }
 
 export function useLoginSessionHook(): ILoginSessionHook {
   const [
     authResult,
     setAuthResult
-  ] = useState<IAuthResponse | null>(() => {
+  ] = useState<IDataLogin | null>(() => {
 
     // 初始登录态来自本地会话，避免登录成功刷新后卡片状态丢失。
     return getSession();

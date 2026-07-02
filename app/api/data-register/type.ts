@@ -1,19 +1,19 @@
 import type {
-  ILoginRequest
+  IParamsLogin
 } from "../data-login/type";
 
-interface IRegisterFormValues extends ILoginRequest {
+interface IParamsRegister extends IParamsLogin {
   avatarUrl?: string;
   nickname?: string;
 }
 
-interface IRegisterApiRequest extends ILoginRequest {
+interface IParamsRegisterApi extends IParamsLogin {
   ["avatar_url"]?: string;
   nickname?: string;
 }
 
 export type {
-  IRegisterApiRequest,
-  IRegisterFormValues
+  IParamsRegister,
+  IParamsRegisterApi
 };
-export type { IAuthResponse } from "../data-login/type";
+export type { IDataLogin as IDataRegister } from "../data-login/type";

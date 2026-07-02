@@ -3,12 +3,12 @@ import {
 } from "~/request";
 
 import type {
-  TUserListResponse
+  IDataListUsers
 } from "./type";
 
-function listUsers(): Promise<TUserListResponse> {
-  return apiClient.get<TUserListResponse>("/admin/users");
+function dataListUsers(): Promise<IDataListUsers> {
+  return apiClient.get<IDataListUsers>("/admin/users");
 }
 
-export { listUsers };
-export type { TUserListResponse } from "./type";
+export { dataListUsers };
+export type { IDataListUsers } from "./type";

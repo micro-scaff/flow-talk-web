@@ -3,12 +3,12 @@ import {
 } from "~/request";
 
 import type {
-  TUserInfoResponse
+  IDataGetCurrentUser
 } from "./type";
 
-function getCurrentUser(): Promise<TUserInfoResponse> {
-  return apiClient.get<TUserInfoResponse>("/api/me");
+function dataGetCurrentUser(): Promise<IDataGetCurrentUser> {
+  return apiClient.get<IDataGetCurrentUser>("/api/me");
 }
 
-export { getCurrentUser };
-export type { TUserInfoResponse } from "./type";
+export { dataGetCurrentUser };
+export type { IDataGetCurrentUser } from "./type";

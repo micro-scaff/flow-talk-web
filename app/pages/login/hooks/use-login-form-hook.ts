@@ -10,11 +10,11 @@ import {
 } from "react";
 
 import {
-  login
+  dataLogin
 } from "~/api";
 import type {
-  IAuthResponse,
-  ILoginRequest
+  IDataLogin,
+  IParamsLogin
 } from "~/api";
 import {
   saveSession
@@ -25,17 +25,17 @@ import {
 } from "./use-login-session-hook";
 
 interface ILoginFormHook {
-  authResult: IAuthResponse | null;
+  authResult: IDataLogin | null;
   displayName: string;
-  form: FormInstance<ILoginRequest>;
+  form: FormInstance<IParamsLogin>;
   loading: boolean;
-  onSubmit: (values: ILoginRequest) => Promise<void>;
+  onSubmit: (values: IParamsLogin) => Promise<void>;
 }
 
 export function useLoginFormHook(): ILoginFormHook {
   const [
     form
-  ] = Form.useForm<ILoginRequest>();
+  ] = Form.useForm<IParamsLogin>();
 
   const [
     loading,
@@ -49,11 +49,11 @@ export function useLoginFormHook(): ILoginFormHook {
   } = useLoginSessionHook();
 
   // 登录模块 hook 只处理表单状态、提交 loading、接口调用和成功后的本地会话更新。
-  const onSubmit = async (values: ILoginRequest): Promise<void> => {
+  const onSubmit = async (values: IParamsLogin): Promise<void> => {
     setLoading(true);
 
     try {
-      const response = await login(values);
+      const response = await dataLogin(values);
 
       saveSession(response);
       setAuthResult(response);
