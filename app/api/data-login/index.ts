@@ -11,8 +11,6 @@ function login(payload: ILoginRequest): Promise<IAuthResponse> {
   return apiClient.post<IAuthResponse, ILoginRequest>("/api/auth/login", payload);
 }
 
-export { login };
-
 export type {
   IApiErrorResponse,
   IAuthResponse,
@@ -20,3 +18,5 @@ export type {
   IAuthUser,
   ILoginRequest
 } from "./type";
+
+export { login };

@@ -1,4 +1,4 @@
 export * from "./data-login";
-export * from "./register";
-export * from "./user-info";
-export * from "./user-list";
+export * from "./data-register";
+export * from "./data-user-info";
+export * from "./data-user-list";
