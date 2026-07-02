@@ -367,6 +367,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
       const nextMessages = [
         ...messagePage.items
+      // eslint-disable-next-line unicorn/no-array-sort
       ].sort((a, b) => {
         return a.id - b.id;
       });
