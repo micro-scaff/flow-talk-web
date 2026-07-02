@@ -15,10 +15,13 @@ import {
 
 import type {
   IRegisterFormValues
-} from "~/model/auth.model";
+} from "~/api";
 import {
-  authApi
-} from "~/api/auth.api";
+  register
+} from "~/api";
+import {
+  saveSession
+} from "~/utils";
 
 interface IRegisterFormHook {
   form: FormInstance<IRegisterFormValues>;
@@ -51,17 +54,18 @@ export function useRegisterFormHook(): IRegisterFormHook {
     setLoading(true);
 
     try {
-      const response = await authApi.register(values);
+      const response = await register(values);
 
-      authApi.saveSession(response);
+      saveSession(response);
       message.success("注册成功，已为你创建 Flow Talk 账号");
 
       // 当前阶段还没有 IM 工作台，注册成功后先回到登录页承接后续流程。
       navigate("/login", {
         replace: true
       });
-    } catch (error) {
-      message.error(authApi.getErrorMessage(error));
+    } catch {
+
+      // 请求错误由 request 响应拦截器统一提示。
     } finally {
       setLoading(false);
     }

@@ -9,13 +9,16 @@ import {
   useState
 } from "react";
 
+import {
+  login
+} from "~/api";
 import type {
   IAuthResponse,
   ILoginRequest
-} from "~/model/auth.model";
+} from "~/api";
 import {
-  authApi
-} from "~/api/auth.api";
+  saveSession
+} from "~/utils";
 
 import {
   useLoginSessionHook
@@ -50,13 +53,14 @@ export function useLoginFormHook(): ILoginFormHook {
     setLoading(true);
 
     try {
-      const response = await authApi.login(values);
+      const response = await login(values);
 
-      authApi.saveSession(response);
+      saveSession(response);
       setAuthResult(response);
       message.success("登录成功，欢迎回来");
-    } catch (error) {
-      message.error(authApi.getErrorMessage(error));
+    } catch {
+
+      // 请求错误由 request 响应拦截器统一提示。
     } finally {
       setLoading(false);
     }

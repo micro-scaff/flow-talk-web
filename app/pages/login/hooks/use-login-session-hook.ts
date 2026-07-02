@@ -4,10 +4,10 @@ import {
 
 import type {
   IAuthResponse
-} from "~/model/auth.model";
+} from "~/api";
 import {
-  authApi
-} from "~/api/auth.api";
+  getSession
+} from "~/utils";
 
 interface ILoginSessionHook {
   authResult: IAuthResponse | null;
@@ -22,7 +22,7 @@ export function useLoginSessionHook(): ILoginSessionHook {
   ] = useState<IAuthResponse | null>(() => {
 
     // 初始登录态来自本地会话，避免登录成功刷新后卡片状态丢失。
-    return authApi.getSession();
+    return getSession();
   });
 
   const displayName = authResult?.user?.nickname
