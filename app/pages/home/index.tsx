@@ -9,6 +9,21 @@ import {
   getSession
 } from "~/utils";
 
+import {
+  HomeWorkbench
+} from "./components/HomeWorkbench";
+import {
+  useHomeWorkbenchHook
+} from "./hooks/use-home-workbench-hook";
+
+function meta(): Array<{ title: string }> {
+  return [
+    {
+      title: "Flow Talk 工作台"
+    }
+  ];
+}
+
 function clientLoader(): Response | null {
   const session = getSession();
 
@@ -22,7 +37,12 @@ function clientLoader(): Response | null {
 clientLoader.hydrate = true as const;
 
 export default function Home(): ReactElement {
-  return <>111</>;
+  const viewModel = useHomeWorkbenchHook();
+
+  return <HomeWorkbench viewModel={viewModel} />;
 }
 
-export { clientLoader };
+export {
+  clientLoader,
+  meta
+};

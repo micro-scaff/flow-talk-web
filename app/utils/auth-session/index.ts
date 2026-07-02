@@ -45,7 +45,16 @@ function saveSession(response: IDataLogin): void {
   }
 }
 
+function clearSession(): void {
+  authTokenStorage.remove();
+
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(AUTH_SESSION_KEY);
+  }
+}
+
 export {
+  clearSession,
   getSession,
   saveSession
 };

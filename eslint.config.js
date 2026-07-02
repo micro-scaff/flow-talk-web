@@ -24,7 +24,8 @@ export default [
   },
   {
     rules: {
-      "no-duplicate-imports": "off"
+      "no-duplicate-imports": "off",
+      "unicorn/consistent-compound-words": "off"
     }
   }
 ];

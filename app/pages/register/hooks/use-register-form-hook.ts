@@ -44,7 +44,7 @@ export function useRegisterFormHook(): IRegisterFormHook {
 
   const initialValues = useMemo<Partial<IParamsRegister>>(() => {
     return {
-      avatarUrl: "",
+      avatarBase64: "",
       nickname: ""
     };
   }, []);
@@ -59,8 +59,7 @@ export function useRegisterFormHook(): IRegisterFormHook {
       saveSession(response);
       message.success("注册成功，已为你创建 Flow Talk 账号");
 
-      // 当前阶段还没有 IM 工作台，注册成功后先回到登录页承接后续流程。
-      navigate("/login", {
+      navigate("/", {
         replace: true
       });
     } catch {
