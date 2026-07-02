@@ -76,9 +76,9 @@ export function RegisterForm({
         </Form.Item>
 
         <Form.Item
-          label="头像地址"
-          name="avatarUrl">
-          <Input placeholder="https://example.com/avatar.png" />
+          label="头像 Base64"
+          name="avatarBase64">
+          <Input placeholder="data:image/png;base64,..." />
         </Form.Item>
 
         <Button

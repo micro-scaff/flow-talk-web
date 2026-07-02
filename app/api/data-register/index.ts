@@ -10,9 +10,9 @@ import type {
 
 function dataRegister(payload: IParamsRegister): Promise<IDataRegister> {
 
-  // 页面表单使用 camelCase，提交给后端时映射为 OpenAPI 中定义的 avatar_url。
+  // 页面表单使用 camelCase，提交给后端时映射为 OpenAPI 中定义的 avatar_base64。
   const apiPayload: IParamsRegisterApi = {
-    "avatar_url": payload.avatarUrl,
+    "avatar_base64": payload.avatarBase64,
     nickname: payload.nickname,
     password: payload.password,
     username: payload.username

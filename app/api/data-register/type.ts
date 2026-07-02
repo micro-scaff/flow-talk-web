@@ -3,12 +3,12 @@ import type {
 } from "../data-login/type";
 
 export interface IParamsRegister extends IParamsLogin {
-  avatarUrl?: string;
+  avatarBase64?: string;
   nickname?: string;
 }
 
 export interface IParamsRegisterApi extends IParamsLogin {
-  ["avatar_url"]?: string;
+  ["avatar_base64"]?: string;
   nickname?: string;
 }
 
