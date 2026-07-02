@@ -55,6 +55,7 @@ export interface IHomeWorkbenchState {
   searchResults: IDataMessage[];
   searchText: string;
   selectedDirectUserId: number | null;
+  selectedGroupUserIds: number[];
   sending: boolean;
   users: IDataListUsers;
   wsStatus: TWebSocketStatus;
@@ -79,10 +80,12 @@ export interface IHomeWorkbenchActions {
   clearErrorNotice: () => void;
   handleAddMembers: () => Promise<void>;
   handleCreateDirect: () => Promise<void>;
+  handleCreateDirectWithUser: (userId: number) => Promise<void>;
   handleCreateGroup: () => Promise<void>;
   handleDeleteDevice: (targetDeviceId: string) => Promise<void>;
   handleDeleteMessage: (messageId: number) => Promise<void>;
   handleLeaveGroup: () => Promise<void>;
+  handleOpenGroupFromSelection: () => void;
   handleLogout: () => void;
   handleOpenGroupProfile: () => void;
   handleOpenReceipts: (messageId: number) => Promise<void>;
@@ -105,6 +108,8 @@ export interface IHomeWorkbenchActions {
   setSearchResults: (messages: IDataMessage[]) => void;
   setSearchText: (value: string) => void;
   setSelectedDirectUserId: (userId: number | null) => void;
+  setSelectedGroupUserIds: (userIds: number[]) => void;
+  toggleSelectedGroupUser: (userId: number) => void;
 }
 
 export interface IHomeWorkbenchViewModel {

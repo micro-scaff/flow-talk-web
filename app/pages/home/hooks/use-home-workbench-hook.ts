@@ -205,6 +205,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState<number | null>(null);
 
   const [
+    selectedGroupUserIds,
+    setSelectedGroupUserIds
+  ] = useState<number[]>([]);
+
+  const [
     groupForm
   ] = Form.useForm<IGroupFormValues>();
 
@@ -452,6 +457,55 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     selectedDirectUserId
   ]);
 
+  const handleCreateDirectWithUser = useCallback(async (userId: number): Promise<void> => {
+    try {
+      const conversation = await dataCreateDirectConversation({
+        target_user_id: userId
+      });
+
+      await loadConversations();
+      handleSelectConversation(conversation.id);
+    } catch (error) {
+      reportError(error, "创建单聊失败");
+    }
+  }, [
+    handleSelectConversation,
+    loadConversations,
+    reportError
+  ]);
+
+  const toggleSelectedGroupUser = useCallback((userId: number): void => {
+    setSelectedGroupUserIds(currentUserIds => {
+      if (currentUserIds.includes(userId)) {
+        return currentUserIds.filter(currentUserId => {
+          return currentUserId !== userId;
+        });
+      }
+
+      return [
+        ...currentUserIds,
+        userId
+      ];
+    });
+  }, []);
+
+  const handleOpenGroupFromSelection = useCallback((): void => {
+    if (selectedGroupUserIds.length === 0) {
+      message.warning("请先选择在线成员");
+
+      return;
+    }
+
+    groupForm.setFieldsValue({
+      memberIds: selectedGroupUserIds,
+      title: ""
+    });
+    setGroupModalOpen(true);
+  }, [
+    groupForm,
+    selectedGroupUserIds
+  ]);
+
   const handleCreateGroup = useCallback(async (): Promise<void> => {
     try {
       const values = await groupForm.validateFields();
@@ -463,6 +517,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       });
 
       groupForm.resetFields();
+      setSelectedGroupUserIds([]);
       setGroupModalOpen(false);
       await loadConversations();
       handleSelectConversation(conversation.id);
@@ -864,6 +919,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     searchResults,
     searchText,
     selectedDirectUserId,
+    selectedGroupUserIds,
     sending,
     users,
     wsStatus: wsState.status
@@ -890,10 +946,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     },
     handleAddMembers,
     handleCreateDirect,
+    handleCreateDirectWithUser,
     handleCreateGroup,
     handleDeleteDevice,
     handleDeleteMessage,
     handleLeaveGroup,
+    handleOpenGroupFromSelection,
     handleLogout,
     handleOpenGroupProfile,
     handleOpenReceipts,
@@ -915,7 +973,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setReceiptsOpen,
     setSearchResults,
     setSearchText,
-    setSelectedDirectUserId
+    setSelectedDirectUserId,
+    setSelectedGroupUserIds,
+    toggleSelectedGroupUser
   };
 
   return {

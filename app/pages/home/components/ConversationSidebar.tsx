@@ -1,14 +1,19 @@
 import {
+  CheckCircleOutlined,
   LogoutOutlined,
+  MessageOutlined,
+  MoonOutlined,
   ReloadOutlined,
-  TeamOutlined,
-  UserAddOutlined
+  SearchOutlined,
+  SunOutlined,
+  TeamOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
   Badge,
   Button,
-  Empty,
+  Checkbox,
+  Input,
   Layout,
   List,
   Space,
@@ -20,15 +25,19 @@ import {
 import type {
   ReactElement
 } from "react";
+import {
+  useState
+} from "react";
+
+import {
+  useThemeHook
+} from "~/hooks/use-theme-hook";
 
 import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  formatDateTime,
-  getConversationTitle,
-  getUserName,
-  readMessageText
+  getUserName
 } from "../utils";
 
 const {
@@ -52,105 +61,203 @@ function ConversationSidebar({
     state
   } = viewModel;
 
+  const {
+    isDark,
+    toggleTheme
+  } = useThemeHook();
+
+  const [
+    keyword,
+    setKeyword
+  ] = useState("");
+
+  const onlineUsers = state.users.filter(user => {
+    const matchesKeyword = !keyword.trim() || getUserName(user).toLowerCase().includes(keyword.trim().toLowerCase()) || user.username?.toLowerCase().includes(keyword.trim().toLowerCase());
+
+    return Boolean(user.id) && user.id !== state.currentUser?.id && state.presences[user.id as number]?.online && matchesKeyword;
+  });
+
+  const currentUserName = getUserName(state.currentUser);
+
   return (
     <Sider
       breakpoint="lg"
-      className="border-r border-[#dadde1] bg-white"
+      className="flow-sidebar border-r border-[#d9dee8] bg-white"
       collapsedWidth={0}
-      width={336}>
-      <div className="flex h-full flex-col">
-        <header className="border-b border-[#dadde1] px-5 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Title
-                className="!mb-0 !text-2xl !font-bold !text-[#1877f2]"
-                level={1}>
-                Flow Talk
-              </Title>
+      theme="light"
+      width={360}>
+      <div className="flow-sidebar-shell">
+        <header className="flow-sidebar-header">
+          <div className="flow-brand-row">
+            <div className="flow-brand-lockup">
+              <div className="flow-brand-mark">
+                FT
+              </div>
 
-              <Text className="text-[#65676b]">
-                {getUserName(state.currentUser)}
-              </Text>
+              <div className="min-w-0">
+                <Title
+                  className="flow-brand-title !mb-0 !text-[20px] !font-black !leading-none"
+                  level={1}>
+                  Flow Talk
+                </Title>
+
+                <Text
+                  className="flow-muted-text mt-1 block max-w-48 text-sm font-semibold"
+                  ellipsis>
+                  Talk workspace
+                </Text>
+              </div>
             </div>
 
-            <Tooltip title="退出登录">
-              <Button
-                className="border-none bg-[#f0f2f5]"
-                icon={<LogoutOutlined />}
-                shape="circle"
-                onClick={actions.handleLogout} />
-            </Tooltip>
+            <Space size={6}>
+              <Tooltip title={isDark ? "切换到白天模式" : "切换到黑夜模式"}>
+                <Button
+                  aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}
+                  className="flow-icon-button"
+                  icon={isDark ? <SunOutlined /> : <MoonOutlined />}
+                  shape="circle"
+                  onClick={toggleTheme} />
+              </Tooltip>
+
+              <Tooltip title="刷新">
+                <Button
+                  className="flow-icon-button"
+                  icon={<ReloadOutlined />}
+                  shape="circle"
+                  onClick={() => void actions.handleRefresh()} />
+              </Tooltip>
+
+              <Tooltip title="退出登录">
+                <Button
+                  className="flow-icon-button"
+                  icon={<LogoutOutlined />}
+                  shape="circle"
+                  onClick={actions.handleLogout} />
+              </Tooltip>
+            </Space>
           </div>
 
-          {/* Facebook 类产品的高频动作通常放在列表上方，降低创建会话的寻找成本。 */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <Button
-              className="font-semibold"
-              icon={<UserAddOutlined />}
-              onClick={() => actions.setDirectModalOpen(true)}>
-              单聊
-            </Button>
+          <div className="flow-user-card">
+            <Avatar
+              className="flow-user-avatar"
+              size={42}
+              src={state.currentUser?.avatar_url}>
+              {currentUserName.slice(0, 1)}
+            </Avatar>
+
+            <div className="min-w-0">
+              <Text
+                className="block font-black"
+                ellipsis>
+                {currentUserName}
+              </Text>
+
+              <Text
+                className="flow-muted-text block text-xs"
+                ellipsis>
+                {state.currentUser?.username ? `@${state.currentUser.username}` : `ID ${state.currentUser?.id || "-"}`}
+              </Text>
+            </div>
+          </div>
+
+          <div className="flow-sidebar-status">
+            <div className="flow-online-summary">
+              <span className="flow-status-dot" />
+              <span>
+                {onlineUsers.length}
+                {" "}
+                人在线
+              </span>
+            </div>
 
             <Button
-              className="font-semibold"
+              className="flow-compact-primary"
+              disabled={state.selectedGroupUserIds.length === 0}
               icon={<TeamOutlined />}
-              onClick={() => actions.setGroupModalOpen(true)}>
-              群聊
+              type="primary"
+              onClick={actions.handleOpenGroupFromSelection}>
+              创建群聊
+              {" · "}
+              {state.selectedGroupUserIds.length}
             </Button>
           </div>
+
+          <Input
+            allowClear
+            className="flow-search-input"
+            prefix={<SearchOutlined />}
+            placeholder="搜索在线人员"
+            value={keyword}
+            onChange={event => {
+              setKeyword(event.target.value);
+            }} />
         </header>
 
-        <div className="flex items-center justify-between px-5 py-3">
-          <Text strong>
-            会话
-          </Text>
+        <div className="flow-list-title">
+          <div>
+            <Text className="text-base font-black">
+              在线人员名单
+            </Text>
+          </div>
 
-          <Space>
-            <Tag color={state.wsStatus === "open" ? "green" : "default"}>
-              {state.wsStatus === "open" ? "实时在线" : "实时未连接"}
-            </Tag>
-
-            <Tooltip title="刷新">
-              <Button
-                icon={<ReloadOutlined />}
-                size="small"
-                onClick={() => void actions.handleRefresh()} />
-            </Tooltip>
-          </Space>
+          <Tag className="m-0 rounded-full px-2 font-bold" color="blue">
+            {state.selectedGroupUserIds.length}
+          </Tag>
         </div>
 
-        <Spin spinning={state.loading}>
+        <Spin
+          className="min-h-0 flex-1"
+          spinning={state.loading}>
           <List
-            className="overflow-y-auto"
-            dataSource={state.conversations}
+            className="flow-contact-list"
+            dataSource={onlineUsers}
             locale={{
-              emptyText: <Empty description="暂无会话" />
+              emptyText: (
+                <div className="flow-contact-empty">
+                  <div className="flow-empty-avatar">
+                    <MessageOutlined />
+                  </div>
+
+                  <Text className="text-sm font-bold">
+                    暂无在线联系人
+                  </Text>
+
+                  <Text className="flow-muted-text mt-1 text-xs">
+                    等待好友上线
+                  </Text>
+                </div>
+              )
             }}
-            renderItem={conversation => {
-              const selected = conversation.id === state.activeConversationId;
+            renderItem={user => {
+              const userId = user.id as number;
+
+              const selected = state.selectedGroupUserIds.includes(userId);
 
               return (
                 <List.Item
-                  className={`cursor-pointer !border-b-0 px-4 py-2 transition ${selected ? "!bg-[#e7f3ff]" : "hover:!bg-[#f0f2f5]"}`}
-                  onClick={() => actions.handleSelectConversation(conversation.id)}>
+                  className={`flow-contact-row ${selected ? "is-selected" : ""}`}
+                  onClick={() => actions.toggleSelectedGroupUser(userId)}>
                   <List.Item.Meta
                     avatar={(
                       <Badge
-                        count={conversation.unread_count || 0}
-                        size="small">
+                        color="#31a24c"
+                        dot
+                        offset={[
+                          -4,
+                          36
+                        ]}>
                         <Avatar
-                          className="bg-[#1877f2]"
-                          size={44}
-                          src={conversation.avatar_url}>
-                          {getConversationTitle(conversation).slice(0, 1)}
+                          className="bg-[#e7f3ff] font-bold text-[#1877f2]"
+                          size={42}>
+                          {getUserName(user).slice(0, 1)}
                         </Avatar>
                       </Badge>
                     )}
                     description={(
                       <Text
-                        className="text-[#65676b]"
+                        className="flow-muted-text"
                         ellipsis>
-                        {conversation.last_message ? readMessageText(conversation.last_message) : "还没有消息"}
+                        {user.username ? `@${user.username}` : "在线"}
                       </Text>
                     )}
                     title={(
@@ -159,18 +266,51 @@ function ConversationSidebar({
                           className="min-w-0"
                           strong
                           ellipsis>
-                          {getConversationTitle(conversation)}
+                          {getUserName(user)}
                         </Text>
 
-                        <Text className="shrink-0 text-xs text-[#8a8d91]">
-                          {formatDateTime(conversation.last_message_at)}
-                        </Text>
+                        <Space size={6}>
+                          <Tooltip title="发消息">
+                            <Button
+                              icon={<MessageOutlined />}
+                              shape="circle"
+                              size="small"
+                              type="text"
+                              onClick={event => {
+                                event.stopPropagation();
+                                return void actions.handleCreateDirectWithUser(userId);
+                              }} />
+                          </Tooltip>
+
+                          <Checkbox
+                            aria-label={`选择 ${getUserName(user)} 建群`}
+                            checked={selected}
+                            onClick={event => {
+                              event.stopPropagation();
+                            }}
+                            onChange={() => {
+                              actions.toggleSelectedGroupUser(userId);
+                            }} />
+                        </Space>
                       </div>
                     )} />
                 </List.Item>
               );
             }} />
         </Spin>
+
+        {state.selectedGroupUserIds.length > 0 && (
+          <footer className="flow-sidebar-footer">
+            <Button
+              block
+              className="flow-footer-button"
+              icon={<CheckCircleOutlined />}
+              type="primary"
+              onClick={actions.handleOpenGroupFromSelection}>
+              创建群聊
+            </Button>
+          </footer>
+        )}
       </div>
     </Sider>
   );

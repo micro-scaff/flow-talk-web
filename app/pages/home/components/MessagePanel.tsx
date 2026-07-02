@@ -1,12 +1,18 @@
 import {
+  CheckSquareOutlined,
+  DeleteOutlined,
+  MessageOutlined,
+  PaperClipOutlined,
+  RollbackOutlined,
   SendOutlined
 } from "@ant-design/icons";
 import {
+  Avatar,
   Button,
-  Empty,
   Input,
   Space,
   Spin,
+  Tooltip,
   Typography
 } from "antd";
 import type {
@@ -18,6 +24,7 @@ import type {
 } from "../type";
 import {
   formatDateTime,
+  getUserName,
   readMessageText
 } from "../utils";
 
@@ -42,9 +49,9 @@ function MessagePanel({
   } = viewModel;
 
   return (
-    <div className="flex min-w-0 flex-col">
+    <div className="flow-chat-panel flex h-full min-w-0 flex-col bg-[#f5f7fb]">
       {state.searchResults.length > 0 && (
-        <div className="border-b border-[#dadde1] bg-[#fff4d6] px-6 py-3">
+        <div className="border-b border-[#eadfb8] bg-[#fff8df] px-6 py-3">
           <Space
             className="w-full"
             direction="vertical">
@@ -80,91 +87,142 @@ function MessagePanel({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto bg-[#f0f2f5] px-6 py-5">
+      <div className="flow-chat-scroll">
         <Spin spinning={state.messageLoading}>
           {state.activeConversationId ? (
             <Space
-              className="w-full"
+              className="flow-message-stack"
               direction="vertical"
-              size={12}>
+              size={14}>
               {state.messages.length === 0 && (
-                <Empty description="暂无消息，发出第一条吧" />
+                <div className="flow-chat-empty">
+                  <div className="flow-empty-bubble-stack">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+
+                  <Text className="text-base font-black text-[#050505]">
+                    暂无消息
+                  </Text>
+
+                  <Text className="mt-1 text-sm text-[#65676b]">
+                    发送第一条消息
+                  </Text>
+                </div>
               )}
 
               {state.messages.map(item => {
                 const isMine = item.sender_id === state.currentUser?.id;
 
+                const sender = state.users.find(user => {
+                  return user.id === item.sender_id;
+                });
+
                 return (
                   <div
                     key={item.id}
-                    className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[72%] rounded-lg px-4 py-3 shadow-sm ${isMine ? "bg-[#0084ff] text-white" : "bg-white text-[#050505]"}`}>
-                      <div className="mb-1 flex items-center justify-between gap-4">
-                        <Text className={isMine ? "!text-blue-50" : "text-[#65676b]"}>
-                          #
-                          {item.sender_id}
-                        </Text>
+                    className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                    {!isMine && (
+                      <Avatar
+                        className="shrink-0 bg-[#e7f3ff] font-bold text-[#1877f2]"
+                        size={32}>
+                        {getUserName(sender).slice(0, 1)}
+                      </Avatar>
+                    )}
 
-                        <Text className={`text-xs ${isMine ? "!text-blue-100" : "text-[#8a8d91]"}`}>
-                          {formatDateTime(item.sent_at)}
-                        </Text>
+                    <div className={`flow-message-group group ${isMine ? "items-end" : "items-start"} flex flex-col`}>
+                      <Text className={`mb-1 text-xs ${isMine ? "text-right text-[#8a8d91]" : "text-[#65676b]"}`}>
+                        {isMine ? "你" : getUserName(sender)}
+                        {" · "}
+                        {formatDateTime(item.sent_at)}
+                      </Text>
+
+                      <div className={`flow-message-bubble ${isMine ? "is-mine" : ""}`}>
+                        <div className="whitespace-pre-wrap break-words text-sm leading-6">
+                          {readMessageText(item)}
+                        </div>
                       </div>
 
-                      <div className="whitespace-pre-wrap break-words text-sm leading-6">
-                        {readMessageText(item)}
-                      </div>
-
-                      <div className="mt-2 flex justify-end gap-1">
-                        <Button
-                          size="small"
-                          type="text"
-                          onClick={() => {
-                            return void actions.handleOpenReceipts(item.id);
-                          }}>
-                          回执
-                        </Button>
-
-                        {isMine && item.status !== "recalled" && (
+                      <Space
+                        className="mt-1 opacity-70 transition group-hover:opacity-100"
+                        size={2}>
+                        <Tooltip title="回执">
                           <Button
+                            icon={<CheckSquareOutlined />}
                             size="small"
                             type="text"
                             onClick={() => {
-                              return void actions.handleRecallMessage(item.id);
-                            }}>
-                            撤回
-                          </Button>
+                              return void actions.handleOpenReceipts(item.id);
+                            }} />
+                        </Tooltip>
+
+                        {isMine && item.status !== "recalled" && (
+                          <Tooltip title="撤回">
+                            <Button
+                              icon={<RollbackOutlined />}
+                              size="small"
+                              type="text"
+                              onClick={() => {
+                                return void actions.handleRecallMessage(item.id);
+                              }} />
+                          </Tooltip>
                         )}
 
                         {isMine && item.status !== "deleted" && (
-                          <Button
-                            size="small"
-                            type="text"
-                            onClick={() => {
-                              return void actions.handleDeleteMessage(item.id);
-                            }}>
-                            删除
-                          </Button>
+                          <Tooltip title="删除">
+                            <Button
+                              danger
+                              icon={<DeleteOutlined />}
+                              size="small"
+                              type="text"
+                              onClick={() => {
+                                return void actions.handleDeleteMessage(item.id);
+                              }} />
+                          </Tooltip>
                         )}
-                      </div>
+                      </Space>
                     </div>
                   </div>
                 );
               })}
             </Space>
           ) : (
-            <Empty description="选择或创建一个会话" />
+            <div className="grid h-full min-h-96 place-items-center">
+              <div className="flow-chat-empty">
+                <div className="flow-chat-empty-icon">
+                  <MessageOutlined />
+                </div>
+
+                <Text className="text-lg font-black text-[#050505]">
+                  选择一个会话
+                </Text>
+
+                <Text className="mt-1 text-sm text-[#65676b]">
+                  准备开始新的对话
+                </Text>
+              </div>
+            </div>
           )}
         </Spin>
       </div>
 
-      {/* 输入区固定在底部，避免消息列表滚动时丢失主要操作。 */}
-      <footer className="border-t border-[#dadde1] bg-white p-4">
-        <Space.Compact className="w-full">
+      <footer className="flow-composer">
+        <div className="flow-composer-inner">
+          <Tooltip title="附件">
+            <Button
+              className="flow-icon-button"
+              disabled={!state.activeConversationId}
+              icon={<PaperClipOutlined />}
+              shape="circle" />
+          </Tooltip>
+
           <TextArea
             autoSize={{
               maxRows: 4,
               minRows: 1
             }}
+            className="flow-message-input"
             disabled={!state.activeConversationId}
             placeholder="输入消息，Enter 发送，Shift + Enter 换行"
             value={state.draftText}
@@ -181,16 +239,15 @@ function MessagePanel({
             }} />
 
           <Button
+            className="flow-send-button"
             disabled={!state.activeConversationId}
             icon={<SendOutlined />}
             loading={state.sending}
             type="primary"
             onClick={() => {
               return void actions.handleSendMessage();
-            }}>
-            发送
-          </Button>
-        </Space.Compact>
+            }} />
+        </div>
       </footer>
     </div>
   );

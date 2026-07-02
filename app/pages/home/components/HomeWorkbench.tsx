@@ -10,9 +10,6 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  ConversationDetailPanel
-} from "./ConversationDetailPanel";
-import {
   ConversationSidebar
 } from "./ConversationSidebar";
 import {
@@ -42,11 +39,11 @@ function HomeWorkbench({
   } = viewModel;
 
   return (
-    <main className="min-h-screen bg-[#f0f2f5] text-[#050505]">
-      <Layout className="min-h-screen bg-transparent">
+    <main className="flow-workbench bg-[#f0f2f5] text-[#050505]">
+      <Layout className="flow-workbench-layout bg-transparent">
         <ConversationSidebar viewModel={viewModel} />
 
-        <Content className="flex min-w-0 flex-col">
+        <Content className="flow-workbench-content flex min-w-0 flex-col">
           {state.errorNotice && (
             <Alert
               banner
@@ -58,10 +55,8 @@ function HomeWorkbench({
 
           <WorkspaceHeader viewModel={viewModel} />
 
-          {/* 主区保持消息流优先，右侧信息栏只在宽屏展示，避免窄屏挤压阅读空间。 */}
-          <section className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <section className="flow-workbench-main min-h-0 flex-1">
             <MessagePanel viewModel={viewModel} />
-            <ConversationDetailPanel viewModel={viewModel} />
           </section>
         </Content>
       </Layout>

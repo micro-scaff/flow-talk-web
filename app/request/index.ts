@@ -12,7 +12,7 @@ import type {
   RequestClientOptions
 } from "@mt-kit/request-axios";
 
-const API_BASE_URL = "http://127.0.0.1:8089";
+const API_BASE_URL = "http://127.0.0.1:8080";
 
 const AUTH_TOKEN_KEY = "flow-talk-token";
 
