@@ -1,4 +1,4 @@
-interface IDataGetCurrentUser {
+export interface IDataGetCurrentUser {
   ["auth_source"]?: string;
   ["avatar_url"]?: string;
   ["external_id"]?: string;
@@ -7,5 +7,3 @@ interface IDataGetCurrentUser {
   status?: number;
   username?: string;
 }
-
-export type { IDataGetCurrentUser };

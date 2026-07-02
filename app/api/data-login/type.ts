@@ -1,9 +1,9 @@
-interface IParamsLogin {
+export interface IParamsLogin {
   username: string;
   password: string;
 }
 
-interface IDataLoginUser {
+export interface IDataLoginUser {
   ["auth_source"]?: string;
   ["avatar_url"]?: string;
   ["external_id"]?: string;
@@ -13,18 +13,11 @@ interface IDataLoginUser {
   username?: string;
 }
 
-interface IDataLogin {
+export interface IDataLogin {
   token?: string;
   user?: IDataLoginUser;
 }
 
-interface IAuthSession extends IDataLogin {
+export interface IAuthSession extends IDataLogin {
   signedAt: string;
 }
-
-export type {
-  IAuthSession,
-  IDataLogin,
-  IDataLoginUser,
-  IParamsLogin
-};
