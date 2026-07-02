@@ -8,6 +8,8 @@ import type {
 
 export default [
   index("pages/home/index.tsx"),
+  route("favicon.ico", "resources/favicon.ts"),
+  route(".well-known/appspecific/com.chrome.devtools.json", "resources/chrome-devtools.ts"),
   route("login", "pages/login/index.tsx"),
   route("register", "pages/register/index.tsx")
 ] satisfies RouteConfig;
