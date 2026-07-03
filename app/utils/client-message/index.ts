@@ -12,6 +12,7 @@ function getDeviceId(): string {
   }
 
   const key = "flow-talk-device-id";
+
   const existingDeviceId = window.localStorage.getItem(key);
 
   if (existingDeviceId) {
@@ -25,7 +26,34 @@ function getDeviceId(): string {
   return deviceId;
 }
 
+function getDevicePlatform(): string {
+  if (typeof navigator === "undefined") {
+    return "web-server";
+  }
+
+  const userAgent = navigator.userAgent.toLowerCase();
+
+  const isMobile = (/android|iphone|ipad|ipod|mobile/).test(userAgent);
+
+  let os = "unknown";
+
+  if (userAgent.includes("windows")) {
+    os = "windows";
+  } else if (userAgent.includes("mac os") || userAgent.includes("macintosh")) {
+    os = "macos";
+  } else if (userAgent.includes("android")) {
+    os = "android";
+  } else if ((/iphone|ipad|ipod/).test(userAgent)) {
+    os = "ios";
+  } else if (userAgent.includes("linux")) {
+    os = "linux";
+  }
+
+  return `web-${isMobile ? "mobile" : "desktop"}-${os}`;
+}
+
 export {
   createClientMessageId,
-  getDeviceId
+  getDeviceId,
+  getDevicePlatform
 };

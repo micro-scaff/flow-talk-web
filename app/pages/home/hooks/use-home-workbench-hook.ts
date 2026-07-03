@@ -51,6 +51,7 @@ import {
   clearSession,
   createClientMessageId,
   getDeviceId,
+  getDevicePlatform,
   getSession
 } from "~/utils";
 
@@ -403,6 +404,30 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setDevices(deviceList);
   }, []);
 
+  const upsertCurrentDevice = useCallback(async (showSuccess: boolean): Promise<void> => {
+    try {
+      await dataUpsertDevice({
+        device_id: deviceId,
+        platform: getDevicePlatform(),
+        push_token: ""
+      });
+
+      await loadDevices();
+
+      if (showSuccess) {
+        message.success("当前设备已上报");
+      }
+    } catch (error) {
+      if (showSuccess) {
+        reportError(error, "上报设备失败");
+      }
+    }
+  }, [
+    deviceId,
+    loadDevices,
+    reportError
+  ]);
+
   const loadPresence = useCallback(async (userList: IDataListUsers): Promise<void> => {
     const userIds = userList.
         map(user => {
@@ -448,13 +473,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       setCurrentUser(userData);
       setUsers(userList);
 
-      // 在线状态和设备列表不阻塞首屏；失败时只显示页面错误条，不影响聊天主流程。
+      // 在线状态和设备上报不阻塞首屏；设备上报成功后会顺带刷新设备列表。
       void loadPresence(userList).catch(error => {
         reportError(error, "在线状态加载失败");
       });
-      void loadDevices().catch(error => {
-        reportError(error, "设备列表加载失败");
-      });
+      void upsertCurrentDevice(false);
 
       const routeConversationId = params.conversationId ? Number(params.conversationId) : null;
 
@@ -472,10 +495,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     return true;
   }, [
     loadConversations,
-    loadDevices,
     loadPresence,
     params.conversationId,
-    reportError
+    reportError,
+    upsertCurrentDevice
   ]);
 
   const loadActiveConversation = useCallback(async (conversationId: number): Promise<void> => {
@@ -899,22 +922,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleUpsertDevice = useCallback(async (): Promise<void> => {
-    try {
-      await dataUpsertDevice({
-        device_id: deviceId,
-        platform: "web",
-        push_token: ""
-      });
-
-      await loadDevices();
-      message.success("当前设备已上报");
-    } catch (error) {
-      reportError(error, "上报设备失败");
-    }
+    await upsertCurrentDevice(true);
   }, [
-    deviceId,
-    loadDevices,
-    reportError
+    upsertCurrentDevice
   ]);
 
   const handleDeleteDevice = useCallback(async (targetDeviceId: string): Promise<void> => {
