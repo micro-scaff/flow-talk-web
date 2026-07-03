@@ -9,7 +9,6 @@ import type {
   IDataGetCurrentUser,
   IDataListUsers,
   IDataMessage,
-  IDataMessageReceipt,
   IDataPresence
 } from "~/api";
 import type {
@@ -51,7 +50,6 @@ export interface IHomeWorkbenchState {
   messages: IDataMessage[];
   onlineCount: number;
   presences: Record<number, IDataPresence>;
-  receipts: IDataMessageReceipt[];
   searchResults: IDataMessage[];
   searchText: string;
   selectedDirectUserId: number | null;
@@ -73,7 +71,6 @@ export interface IHomeWorkbenchDialogs {
   groupModalOpen: boolean;
   memberModalOpen: boolean;
   profileModalOpen: boolean;
-  receiptsOpen: boolean;
 }
 
 export interface IHomeWorkbenchActions {
@@ -83,13 +80,10 @@ export interface IHomeWorkbenchActions {
   handleCreateDirectWithUser: (userId: number) => Promise<void>;
   handleCreateGroup: () => Promise<void>;
   handleDeleteDevice: (targetDeviceId: string) => Promise<void>;
-  handleDeleteMessage: (messageId: number) => Promise<void>;
   handleLeaveGroup: () => Promise<void>;
   handleOpenGroupFromSelection: () => void;
   handleLogout: () => void;
   handleOpenGroupProfile: () => void;
-  handleOpenReceipts: (messageId: number) => Promise<void>;
-  handleRecallMessage: (messageId: number) => Promise<void>;
   handleRefresh: () => Promise<void>;
   handleRemoveMember: (userId: number) => Promise<void>;
   handleSearch: () => Promise<void>;
@@ -104,7 +98,6 @@ export interface IHomeWorkbenchActions {
   setGroupModalOpen: (open: boolean) => void;
   setMemberModalOpen: (open: boolean) => void;
   setProfileModalOpen: (open: boolean) => void;
-  setReceiptsOpen: (open: boolean) => void;
   setSearchResults: (messages: IDataMessage[]) => void;
   setSearchText: (value: string) => void;
   setSelectedDirectUserId: (userId: number | null) => void;

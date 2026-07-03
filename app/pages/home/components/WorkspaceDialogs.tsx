@@ -215,28 +215,6 @@ function WorkspaceDialogs({
         </Space>
       </Drawer>
 
-      <Drawer
-        open={dialogs.receiptsOpen}
-        title="消息回执"
-        width={380}
-        onClose={() => {
-          return actions.setReceiptsOpen(false);
-        }}>
-        <List
-          dataSource={state.receipts}
-          locale={{
-            emptyText: <Empty description="暂无回执" />
-          }}
-          renderItem={receipt => {
-            return (
-              <List.Item>
-                <List.Item.Meta
-                  description={formatDateTime(receipt.updated_at)}
-                  title={`用户 ${receipt.user_id}：${receipt.status}`} />
-              </List.Item>
-            );
-          }} />
-      </Drawer>
     </>
   );
 }

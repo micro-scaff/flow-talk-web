@@ -1,12 +1,19 @@
 import {
   ArrowLeftOutlined,
+  UploadOutlined,
   UserAddOutlined
 } from "@ant-design/icons";
 import {
+  Avatar,
   Button,
   Card,
   Form,
-  Input
+  Input,
+  Space,
+  Upload
+} from "antd";
+import type {
+  UploadProps
 } from "antd";
 import {
   Link
@@ -26,6 +33,23 @@ interface IRegisterFormProps {
 export function RegisterForm({
   viewModel
 }: IRegisterFormProps): ReactElement {
+  const avatarBase64 = Form.useWatch("avatarBase64", viewModel.form);
+
+  const nickname = Form.useWatch("nickname", viewModel.form);
+
+  const username = Form.useWatch("username", viewModel.form);
+
+  const avatarUploadProps: UploadProps = {
+    accept: "image/*",
+    beforeUpload(file) {
+      void viewModel.onAvatarUpload(file);
+
+      return Upload.LIST_IGNORE;
+    },
+    maxCount: 1,
+    showUploadList: false
+  };
+
   return (
     <Card
       className="auth-card"
@@ -76,9 +100,25 @@ export function RegisterForm({
         </Form.Item>
 
         <Form.Item
-          label="头像 Base64"
+          hidden
           name="avatarBase64">
-          <Input placeholder="data:image/png;base64,..." />
+          <Input />
+        </Form.Item>
+
+        <Form.Item label="头像">
+          <Space align="center">
+            <Avatar
+              size={56}
+              src={avatarBase64}>
+              {nickname?.slice(0, 1) || username?.slice(0, 1) || "FT"}
+            </Avatar>
+
+            <Upload {...avatarUploadProps}>
+              <Button icon={<UploadOutlined />}>
+                上传头像
+              </Button>
+            </Upload>
+          </Space>
         </Form.Item>
 
         <Button

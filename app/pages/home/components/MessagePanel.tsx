@@ -1,9 +1,6 @@
 import {
-  CheckSquareOutlined,
-  DeleteOutlined,
   MessageOutlined,
   PaperClipOutlined,
-  RollbackOutlined,
   SendOutlined
 } from "@ant-design/icons";
 import {
@@ -115,27 +112,32 @@ function MessagePanel({
               {state.messages.map(item => {
                 const isMine = item.sender_id === state.currentUser?.id;
 
-                const isLocalMessage = item.id < 0;
-
                 const sender = state.users.find(user => {
                   return user.id === item.sender_id;
                 });
+
+                const messageUser = isMine ? state.currentUser : sender;
+
+                const messageName = getUserName(messageUser);
+
+                const messageAvatar = (
+                  <Avatar
+                    className="shrink-0 bg-[#e7f3ff] font-bold text-[#1877f2]"
+                    size={32}
+                    src={messageUser?.avatar_url}>
+                    {messageName.slice(0, 1)}
+                  </Avatar>
+                );
 
                 return (
                   <div
                     key={item.id}
                     className={`flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
-                    {!isMine && (
-                      <Avatar
-                        className="shrink-0 bg-[#e7f3ff] font-bold text-[#1877f2]"
-                        size={32}>
-                        {getUserName(sender).slice(0, 1)}
-                      </Avatar>
-                    )}
+                    {!isMine && messageAvatar}
 
                     <div className={`flow-message-group group ${isMine ? "items-end" : "items-start"} flex flex-col`}>
                       <Text className={`mb-1 text-xs ${isMine ? "text-right text-[#8a8d91]" : "text-[#65676b]"}`}>
-                        {isMine ? "你" : getUserName(sender)}
+                        {messageName}
                         {" · "}
                         {formatDateTime(item.sent_at)}
                         {item.status === "sending" && " · 发送中"}
@@ -147,47 +149,9 @@ function MessagePanel({
                           {readMessageText(item)}
                         </div>
                       </div>
-
-                      <Space
-                        className="mt-1 opacity-70 transition group-hover:opacity-100"
-                        size={2}>
-                        <Tooltip title="回执">
-                          <Button
-                            disabled={isLocalMessage}
-                            icon={<CheckSquareOutlined />}
-                            size="small"
-                            type="text"
-                            onClick={() => {
-                              return void actions.handleOpenReceipts(item.id);
-                            }} />
-                        </Tooltip>
-
-                        {isMine && !isLocalMessage && item.status !== "recalled" && (
-                          <Tooltip title="撤回">
-                            <Button
-                              icon={<RollbackOutlined />}
-                              size="small"
-                              type="text"
-                              onClick={() => {
-                                return void actions.handleRecallMessage(item.id);
-                              }} />
-                          </Tooltip>
-                        )}
-
-                        {isMine && !isLocalMessage && item.status !== "deleted" && (
-                          <Tooltip title="删除">
-                            <Button
-                              danger
-                              icon={<DeleteOutlined />}
-                              size="small"
-                              type="text"
-                              onClick={() => {
-                                return void actions.handleDeleteMessage(item.id);
-                              }} />
-                          </Tooltip>
-                        )}
-                      </Space>
                     </div>
+
+                    {isMine && messageAvatar}
                   </div>
                 );
               })}
@@ -225,7 +189,7 @@ function MessagePanel({
           <TextArea
             autoSize={{
               maxRows: 4,
-              minRows: 1
+              minRows: 2
             }}
             className="flow-message-input"
             disabled={!state.activeConversationId}

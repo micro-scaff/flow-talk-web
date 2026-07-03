@@ -22,16 +22,13 @@ import {
   dataCreateDirectConversation,
   dataCreateGroupConversation,
   dataDeleteDevice,
-  dataDeleteMessage,
   dataDeviceList,
   dataGetCurrentUser,
   dataLeaveGroup,
   dataListUsers,
   dataMarkConversationRead,
   dataMessageList,
-  dataMessageReceipts,
   dataMessageSearch,
-  dataRecallMessage,
   dataRemoveGroupMember,
   dataSendMessage,
   dataUpdateGroupProfile,
@@ -45,7 +42,6 @@ import type {
   IDataGetCurrentUser,
   IDataListUsers,
   IDataMessage,
-  IDataMessageReceipt,
   IDataPresence
 } from "~/api";
 import {
@@ -167,11 +163,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState<Record<number, IDataPresence>>({});
 
   const [
-    receipts,
-    setReceipts
-  ] = useState<IDataMessageReceipt[]>([]);
-
-  const [
     searchResults,
     setSearchResults
   ] = useState<IDataMessage[]>([]);
@@ -229,11 +220,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const [
     devicesOpen,
     setDevicesOpen
-  ] = useState(false);
-
-  const [
-    receiptsOpen,
-    setReceiptsOpen
   ] = useState(false);
 
   const [
@@ -912,62 +898,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     searchText
   ]);
 
-  const handleRecallMessage = useCallback(async (messageId: number): Promise<void> => {
-    try {
-      const response = await dataRecallMessage({
-        messageId
-      });
-
-      setMessages(currentMessages => {
-        return currentMessages.map(item => {
-          return (item.id === messageId ? response : item);
-        });
-      });
-    } catch (error) {
-      reportError(error, "撤回消息失败");
-    }
-  }, [
-    reportError
-  ]);
-
-  const handleDeleteMessage = useCallback(async (messageId: number): Promise<void> => {
-    try {
-      const response = await dataDeleteMessage({
-        messageId
-      });
-
-      setMessages(currentMessages => {
-        return currentMessages.map(item => {
-          return (item.id === messageId ? response : item);
-        });
-      });
-    } catch (error) {
-      reportError(error, "删除消息失败");
-    }
-  }, [
-    reportError
-  ]);
-
-  const handleOpenReceipts = useCallback(async (messageId: number): Promise<void> => {
-    try {
-      const response = await dataMessageReceipts({
-        messageId
-      });
-
-      setReceipts(response);
-      setReceiptsOpen(true);
-    } catch (error) {
-      reportError(error, "消息回执加载失败");
-    }
-  }, [
-    reportError
-  ]);
-
   const handleUpsertDevice = useCallback(async (): Promise<void> => {
     try {
       await dataUpsertDevice({
         device_id: deviceId,
-        platform: navigator.platform || "web",
+        platform: "web",
         push_token: ""
       });
 
@@ -1162,7 +1097,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     messages,
     onlineCount,
     presences,
-    receipts,
     searchResults,
     searchText,
     selectedDirectUserId,
@@ -1177,8 +1111,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     directModalOpen,
     groupModalOpen,
     memberModalOpen,
-    profileModalOpen,
-    receiptsOpen
+    profileModalOpen
   };
 
   const forms: IHomeWorkbenchForms = {
@@ -1196,13 +1129,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleCreateDirectWithUser,
     handleCreateGroup,
     handleDeleteDevice,
-    handleDeleteMessage,
     handleLeaveGroup,
     handleOpenGroupFromSelection,
     handleLogout,
     handleOpenGroupProfile,
-    handleOpenReceipts,
-    handleRecallMessage,
     handleRefresh,
     handleRemoveMember,
     handleSearch,
@@ -1217,7 +1147,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setGroupModalOpen,
     setMemberModalOpen,
     setProfileModalOpen,
-    setReceiptsOpen,
     setSearchResults,
     setSearchText,
     setSelectedDirectUserId,

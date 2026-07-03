@@ -23,8 +23,14 @@ import {
   saveSession
 } from "~/utils";
 
+import {
+  isImageFile,
+  readFileAsBase64
+} from "../utils";
+
 interface IRegisterFormHook {
   form: FormInstance<IParamsRegister>;
+  onAvatarUpload: (file: File) => Promise<void>;
   initialValues: Partial<IParamsRegister>;
   loading: boolean;
   onSubmit: (values: IParamsRegister) => Promise<void>;
@@ -48,6 +54,23 @@ export function useRegisterFormHook(): IRegisterFormHook {
       nickname: ""
     };
   }, []);
+
+  const onAvatarUpload = async (file: File): Promise<void> => {
+    if (!isImageFile(file)) {
+      message.warning("请选择图片文件");
+
+      return;
+    }
+
+    try {
+      const avatarBase64 = await readFileAsBase64(file);
+
+      form.setFieldValue("avatarBase64", avatarBase64);
+      message.success("头像已选择");
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : "头像读取失败");
+    }
+  };
 
   // 注册模块 hook 负责把表单动作串起来，接口字段映射交给 api 层处理。
   const onSubmit = async (values: IParamsRegister): Promise<void> => {
@@ -74,6 +97,7 @@ export function useRegisterFormHook(): IRegisterFormHook {
     form,
     initialValues,
     loading,
+    onAvatarUpload,
     onSubmit
   };
 }
