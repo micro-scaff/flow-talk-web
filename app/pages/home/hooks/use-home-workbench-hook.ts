@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState
 } from "react";
 import {
@@ -72,9 +73,27 @@ import {
   getActionErrorMessage,
   getConversationTitle,
   getUserName,
+  createLocalSendingMessage,
   isFormValidationError,
-  pickWsMessage
+  markMessageFailed,
+  mergeMessage,
+  pickWsMessage,
+  replaceSendingMessage,
+  shouldRefreshForRealtimeMessage,
+  updateConversationSummary
 } from "../utils";
+
+const MESSAGE_ACK_TIMEOUT_MS = 8000;
+
+const REALTIME_REFRESH_DEBOUNCE_MS = 200;
+
+interface IPendingMessage {
+  clientMsgId: string;
+  content: IDataMessage["content"];
+  conversationId: number;
+  messageType: IDataMessage["message_type"];
+  timeoutId?: number;
+}
 
 function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const params = useParams();
@@ -88,6 +107,24 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, []);
 
   const wsState = useWebSocketHook(session?.token || "", deviceId);
+
+  const {
+    lastEvent,
+    sendJson,
+    status: wsStatus
+  } = wsState;
+
+  const pendingMessagesRef = useRef<Record<string, IPendingMessage>>({});
+
+  const messagesRef = useRef<IDataMessage[]>([]);
+
+  const conversationsRef = useRef<IDataConversationListItem[]>([]);
+
+  const ackedMessageIdsRef = useRef<Set<number>>(new Set());
+
+  const ackedClientMessageIdsRef = useRef<Set<string>>(new Set());
+
+  const refreshConversationsTimerRef = useRef<null | number>(null);
 
   const [
     currentUser,
@@ -271,6 +308,108 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     return conversationList;
   }, []);
+
+  const scheduleConversationRefresh = useCallback((fallback: string): void => {
+    if (refreshConversationsTimerRef.current) {
+      window.clearTimeout(refreshConversationsTimerRef.current);
+    }
+
+    refreshConversationsTimerRef.current = window.setTimeout(() => {
+      refreshConversationsTimerRef.current = null;
+
+      void loadConversations().catch(error => {
+        reportError(error, fallback);
+      });
+    }, REALTIME_REFRESH_DEBOUNCE_MS);
+  }, [
+    loadConversations,
+    reportError
+  ]);
+
+  const clearPendingMessage = useCallback((requestId: string): IPendingMessage | null => {
+    const pendingMessage = pendingMessagesRef.current[requestId];
+
+    if (!pendingMessage) {
+      return null;
+    }
+
+    if (pendingMessage.timeoutId) {
+      window.clearTimeout(pendingMessage.timeoutId);
+    }
+
+    const {
+      [requestId]: _removedMessage,
+      ...pendingMessages
+    } = pendingMessagesRef.current;
+
+    pendingMessagesRef.current = pendingMessages;
+
+    return pendingMessage;
+  }, []);
+
+  const findPendingMessageByClientId = useCallback((clientMsgId?: string): [
+    string,
+    IPendingMessage
+  ] | null => {
+    if (!clientMsgId) {
+      return null;
+    }
+
+    return Object.entries(pendingMessagesRef.current).find(([
+      ,
+      pendingMessage
+    ]) => {
+      return pendingMessage.clientMsgId === clientMsgId;
+    }) || null;
+  }, []);
+
+  const rememberAckedMessage = useCallback((messageItem: IDataMessage): void => {
+    if (messageItem.id > 0) {
+      ackedMessageIdsRef.current.add(messageItem.id);
+    }
+
+    if (messageItem.client_msg_id) {
+      ackedClientMessageIdsRef.current.add(messageItem.client_msg_id);
+    }
+  }, []);
+
+  const isRecentlyAckedMessage = useCallback((messageItem: IDataMessage): boolean => {
+    return ackedMessageIdsRef.current.has(messageItem.id) || Boolean(messageItem.client_msg_id && ackedClientMessageIdsRef.current.has(messageItem.client_msg_id));
+  }, []);
+
+  const sendMessageByHttp = useCallback(async (pendingMessage: IPendingMessage): Promise<void> => {
+    setSending(true);
+
+    try {
+      const response = await dataSendMessage({
+        client_msg_id: pendingMessage.clientMsgId,
+        content: pendingMessage.content || {},
+        conversationId: pendingMessage.conversationId,
+        message_type: pendingMessage.messageType || "text"
+      });
+
+      setMessages(currentMessages => {
+        return mergeMessage(currentMessages, response);
+      });
+      setConversations(currentConversations => {
+        return updateConversationSummary(currentConversations, response, {
+          activeConversationId,
+          currentUserId: currentUser?.id
+        });
+      });
+    } catch (error) {
+      setMessages(currentMessages => {
+        return markMessageFailed(currentMessages, pendingMessage.clientMsgId);
+      });
+      reportError(error, "消息发送失败");
+    } finally {
+      setSending(false);
+    }
+  }, [
+    activeConversationId,
+    currentUser?.id,
+    reportError
+  ]);
 
   const loadDevices = useCallback(async (): Promise<void> => {
     const deviceList = await dataDeviceList();
@@ -681,44 +820,72 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleSendMessage = useCallback(async (): Promise<void> => {
-    if (!activeConversationId || !draftText.trim()) {
+    const trimmedText = draftText.trim();
+
+    if (!activeConversationId || !trimmedText || !currentUser?.id) {
       return;
     }
 
-    setSending(true);
+    const clientMsgId = createClientMessageId();
 
-    try {
-      const response = await dataSendMessage({
-        client_msg_id: createClientMessageId(),
-        content: {
-          text: draftText.trim()
-        },
-        conversationId: activeConversationId,
+    const requestId = `message-${clientMsgId}`;
+
+    const content = {
+      text: trimmedText
+    };
+
+    const pendingMessage: IPendingMessage = {
+      clientMsgId,
+      content,
+      conversationId: activeConversationId,
+      messageType: "text"
+    };
+
+    const localMessage = createLocalSendingMessage({
+      clientMsgId,
+      content,
+      conversationId: activeConversationId,
+      messageType: "text",
+      senderId: currentUser.id
+    });
+
+    setMessages(currentMessages => {
+      return mergeMessage(currentMessages, localMessage);
+    });
+    setDraftText("");
+
+    const sentByWebSocket = sendJson({
+      payload: {
+        client_msg_id: clientMsgId,
+        content,
+        conversation_id: activeConversationId,
         message_type: "text"
-      });
+      },
+      request_id: requestId,
+      type: "message.send"
+    });
 
-      setMessages(currentMessages => {
-        return [
-          ...currentMessages.filter(item => {
-            return item.id !== response.id;
-          }),
-          response
-        ];
-      });
-      setDraftText("");
-      void loadConversations().catch(error => {
-        reportError(error, "会话列表刷新失败");
-      });
-    } catch (error) {
-      reportError(error, "消息发送失败");
-    } finally {
-      setSending(false);
+    if (sentByWebSocket) {
+      pendingMessage.timeoutId = window.setTimeout(() => {
+        const timedOutMessage = clearPendingMessage(requestId);
+
+        if (timedOutMessage) {
+          void sendMessageByHttp(timedOutMessage);
+        }
+      }, MESSAGE_ACK_TIMEOUT_MS);
+      pendingMessagesRef.current[requestId] = pendingMessage;
+
+      return;
     }
+
+    await sendMessageByHttp(pendingMessage);
   }, [
     activeConversationId,
+    clearPendingMessage,
+    currentUser?.id,
     draftText,
-    loadConversations,
-    reportError
+    sendMessageByHttp,
+    sendJson
   ]);
 
   const handleSearch = useCallback(async (): Promise<void> => {
@@ -869,36 +1036,116 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   useEffect(() => {
-    const realtimeMessage = pickWsMessage(wsState.lastEvent?.payload);
+    messagesRef.current = messages;
+  }, [
+    messages
+  ]);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [
+    conversations
+  ]);
+
+  useEffect(() => {
+    const wsEvent = lastEvent;
+
+    const realtimeMessage = pickWsMessage(wsEvent?.payload);
+
+    if (wsEvent?.type === "error") {
+      const pendingMessage = wsEvent.requestId ? clearPendingMessage(wsEvent.requestId) : null;
+
+      if (pendingMessage) {
+        setMessages(currentMessages => {
+          return markMessageFailed(currentMessages, pendingMessage.clientMsgId);
+        });
+        setSending(false);
+      }
+
+      const errorMessage = getActionErrorMessage(wsEvent.payload, "消息发送失败");
+
+      setErrorNotice(errorMessage);
+
+      return;
+    }
 
     if (!realtimeMessage) {
       return;
     }
 
+    if (wsEvent?.type === "message.ack") {
+      const pendingByRequestId = wsEvent.requestId ? clearPendingMessage(wsEvent.requestId) : null;
+
+      if (!pendingByRequestId) {
+        const pendingByClientId = findPendingMessageByClientId(realtimeMessage.client_msg_id);
+
+        if (pendingByClientId) {
+          clearPendingMessage(pendingByClientId[0]);
+        }
+      }
+
+      setSending(false);
+      rememberAckedMessage(realtimeMessage);
+
+      if (realtimeMessage.conversation_id === activeConversationId) {
+        setMessages(currentMessages => {
+          return replaceSendingMessage(currentMessages, realtimeMessage);
+        });
+      }
+
+      return;
+    }
+
+    const isRecentlyAcked = isRecentlyAckedMessage(realtimeMessage);
+
+    const shouldRefreshIfMissing = !isRecentlyAcked && shouldRefreshForRealtimeMessage(wsEvent?.type, realtimeMessage, messagesRef.current);
+
     if (realtimeMessage.conversation_id === activeConversationId) {
       setMessages(currentMessages => {
-        if (currentMessages.some(item => {
-          return item.id === realtimeMessage.id;
-        })) {
-          return currentMessages;
-        }
-
-        return [
-          ...currentMessages,
-          realtimeMessage
-        ];
+        return mergeMessage(currentMessages, realtimeMessage);
       });
     }
 
-    void loadConversations().catch(error => {
-      reportError(error, "实时消息后刷新会话列表失败");
+    const conversationExists = conversationsRef.current.some(conversation => {
+      return conversation.id === realtimeMessage.conversation_id;
     });
+
+    setConversations(currentConversations => {
+      return updateConversationSummary(currentConversations, realtimeMessage, {
+        activeConversationId,
+        currentUserId: currentUser?.id
+      });
+    });
+
+    if (!conversationExists && shouldRefreshIfMissing) {
+      scheduleConversationRefresh("实时消息后刷新会话列表失败");
+    }
   }, [
     activeConversationId,
-    loadConversations,
-    reportError,
-    wsState.lastEvent
+    clearPendingMessage,
+    currentUser?.id,
+    findPendingMessageByClientId,
+    isRecentlyAckedMessage,
+    lastEvent,
+    rememberAckedMessage,
+    scheduleConversationRefresh
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (refreshConversationsTimerRef.current) {
+        window.clearTimeout(refreshConversationsTimerRef.current);
+      }
+
+      for (const pendingMessage of Object.values(pendingMessagesRef.current)) {
+        if (pendingMessage.timeoutId) {
+          window.clearTimeout(pendingMessage.timeoutId);
+        }
+      }
+
+      pendingMessagesRef.current = {};
+    };
+  }, []);
 
   const state: IHomeWorkbenchState = {
     activeConversation,
@@ -922,7 +1169,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     selectedGroupUserIds,
     sending,
     users,
-    wsStatus: wsState.status
+    wsStatus
   };
 
   const dialogs: IHomeWorkbenchDialogs = {

@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsMessageList {
-  before_id?: number;
+  ["before_id"]?: number;
   conversationId: number;
   limit?: number;
 }

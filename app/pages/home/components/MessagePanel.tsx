@@ -115,6 +115,8 @@ function MessagePanel({
               {state.messages.map(item => {
                 const isMine = item.sender_id === state.currentUser?.id;
 
+                const isLocalMessage = item.id < 0;
+
                 const sender = state.users.find(user => {
                   return user.id === item.sender_id;
                 });
@@ -136,6 +138,8 @@ function MessagePanel({
                         {isMine ? "你" : getUserName(sender)}
                         {" · "}
                         {formatDateTime(item.sent_at)}
+                        {item.status === "sending" && " · 发送中"}
+                        {item.status === "failed" && " · 发送失败"}
                       </Text>
 
                       <div className={`flow-message-bubble ${isMine ? "is-mine" : ""}`}>
@@ -149,6 +153,7 @@ function MessagePanel({
                         size={2}>
                         <Tooltip title="回执">
                           <Button
+                            disabled={isLocalMessage}
                             icon={<CheckSquareOutlined />}
                             size="small"
                             type="text"
@@ -157,7 +162,7 @@ function MessagePanel({
                             }} />
                         </Tooltip>
 
-                        {isMine && item.status !== "recalled" && (
+                        {isMine && !isLocalMessage && item.status !== "recalled" && (
                           <Tooltip title="撤回">
                             <Button
                               icon={<RollbackOutlined />}
@@ -169,7 +174,7 @@ function MessagePanel({
                           </Tooltip>
                         )}
 
-                        {isMine && item.status !== "deleted" && (
+                        {isMine && !isLocalMessage && item.status !== "deleted" && (
                           <Tooltip title="删除">
                             <Button
                               danger

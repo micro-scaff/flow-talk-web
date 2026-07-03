@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -12,6 +13,7 @@ import {
 type TWebSocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
 interface IWebSocketEvent {
+  requestId?: string;
   raw: MessageEvent["data"];
   type?: string;
   payload?: unknown;
@@ -19,9 +21,13 @@ interface IWebSocketEvent {
 
 interface IWebSocketHookState {
   lastEvent: IWebSocketEvent | null;
-  sendJson: (payload: unknown) => void;
+  sendJson: (payload: unknown) => boolean;
   status: TWebSocketStatus;
 }
+
+const HEARTBEAT_INTERVAL_MS = 25_000;
+
+const RECONNECT_DELAY_MS = 2000;
 
 function buildWsUrl(token: string, deviceId: string): string {
   const url = new URL("/ws", API_BASE_URL);
@@ -30,7 +36,7 @@ function buildWsUrl(token: string, deviceId: string): string {
   url.searchParams.set("token", token);
   url.searchParams.set("device_id", deviceId);
 
-  return url.toString();
+  return url.href;
 }
 
 function parseWsEvent(raw: MessageEvent["data"]): IWebSocketEvent {
@@ -43,12 +49,14 @@ function parseWsEvent(raw: MessageEvent["data"]): IWebSocketEvent {
   try {
     const data = JSON.parse(raw) as {
       payload?: unknown;
+      ["request_id"]?: string;
       type?: string;
     };
 
     return {
       payload: data.payload,
       raw,
+      requestId: data.request_id,
       type: data.type
     };
   } catch {
@@ -61,6 +69,12 @@ function parseWsEvent(raw: MessageEvent["data"]): IWebSocketEvent {
 function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState {
   const socketRef = useRef<WebSocket | null>(null);
 
+  const reconnectTimerRef = useRef<number | null>(null);
+
+  const heartbeatTimerRef = useRef<number | null>(null);
+
+  const shouldReconnectRef = useRef(false);
+
   const [
     status,
     setStatus
@@ -71,55 +85,100 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
     setLastEvent
   ] = useState<IWebSocketEvent | null>(null);
 
+  const clearReconnectTimer = useCallback((): void => {
+    if (!reconnectTimerRef.current) {
+      return;
+    }
+
+    window.clearTimeout(reconnectTimerRef.current);
+    reconnectTimerRef.current = null;
+  }, []);
+
+  const clearHeartbeatTimer = useCallback((): void => {
+    if (!heartbeatTimerRef.current) {
+      return;
+    }
+
+    window.clearInterval(heartbeatTimerRef.current);
+    heartbeatTimerRef.current = null;
+  }, []);
+
   useEffect(() => {
     if (!token || !deviceId || typeof window === "undefined") {
       return undefined;
     }
 
-    setStatus("connecting");
+    shouldReconnectRef.current = true;
 
-    const socket = new WebSocket(buildWsUrl(token, deviceId));
+    const connect = (): void => {
+      clearHeartbeatTimer();
+      setStatus("connecting");
 
-    socketRef.current = socket;
+      const socket = new WebSocket(buildWsUrl(token, deviceId));
 
-    socket.addEventListener("open", () => {
-      setStatus("open");
-    });
+      socketRef.current = socket;
 
-    socket.addEventListener("message", event => {
-      const parsedEvent = parseWsEvent(event.data);
+      socket.addEventListener("open", () => {
+        setStatus("open");
+        clearHeartbeatTimer();
+        heartbeatTimerRef.current = window.setInterval(() => {
+          if (socket.readyState !== WebSocket.OPEN) {
+            return;
+          }
 
-      setLastEvent(parsedEvent);
+          socket.send(JSON.stringify({
+            request_id: `ping-${Date.now()}`,
+            type: "ping"
+          }));
+        }, HEARTBEAT_INTERVAL_MS);
+      });
 
-      if (parsedEvent.type === "ping") {
-        socket.send(JSON.stringify({
-          type: "pong"
-        }));
-      }
-    });
+      socket.addEventListener("message", event => {
+        const parsedEvent = parseWsEvent(event.data);
 
-    socket.addEventListener("close", () => {
-      setStatus("closed");
-    });
+        setLastEvent(parsedEvent);
+      });
 
-    socket.addEventListener("error", () => {
-      setStatus("error");
-    });
+      socket.addEventListener("close", () => {
+        clearHeartbeatTimer();
+        setStatus("closed");
+
+        if (shouldReconnectRef.current) {
+          clearReconnectTimer();
+          reconnectTimerRef.current = window.setTimeout(connect, RECONNECT_DELAY_MS);
+        }
+      });
+
+      socket.addEventListener("error", () => {
+        setStatus("error");
+      });
+    };
+
+    connect();
 
     return () => {
-      socket.close();
+      shouldReconnectRef.current = false;
+      clearHeartbeatTimer();
+      clearReconnectTimer();
+      socketRef.current?.close();
       socketRef.current = null;
     };
   }, [
+    clearHeartbeatTimer,
+    clearReconnectTimer,
     deviceId,
     token
   ]);
 
   const sendJson = useMemo(() => {
-    return (payload: unknown): void => {
-      if (socketRef.current?.readyState === WebSocket.OPEN) {
-        socketRef.current.send(JSON.stringify(payload));
+    return (payload: unknown): boolean => {
+      if (socketRef.current?.readyState !== WebSocket.OPEN) {
+        return false;
       }
+
+      socketRef.current.send(JSON.stringify(payload));
+
+      return true;
     };
   }, []);
 
@@ -130,9 +189,7 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
   };
 }
 
-export {
-  useWebSocketHook
-};
+export { useWebSocketHook };
 export type {
   IWebSocketEvent,
   IWebSocketHookState,

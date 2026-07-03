@@ -5,7 +5,24 @@ import type {
   IDataMessage
 } from "~/api";
 
+interface ICreateLocalMessageParams {
+  clientMsgId: string;
+  content: IDataMessage["content"];
+  conversationId: number;
+  messageType: IDataMessage["message_type"];
+  senderId: number;
+}
+
+interface IUpdateConversationSummaryOptions {
+  activeConversationId: null | number;
+  currentUserId?: null | number;
+}
+
 type TNamedUser = Pick<IDataGetCurrentUser, "id" | "nickname" | "username">;
+
+function createLocalMessageId(): number {
+  return -(Date.now() + Math.floor(Math.random() * 1000));
+}
 
 function getUserName(user?: null | TNamedUser): string {
   return user?.nickname || user?.username || (user?.id ? `用户 ${user.id}` : "未命名用户");
@@ -74,6 +91,121 @@ function pickWsMessage(payload: unknown): IDataMessage | null {
   return null;
 }
 
+function createLocalSendingMessage(params: ICreateLocalMessageParams): IDataMessage {
+  const {
+    clientMsgId,
+    content,
+    conversationId,
+    messageType,
+    senderId
+  } = params;
+
+  const message: IDataMessage = {
+    client_msg_id: clientMsgId,
+    content,
+    conversation_id: conversationId,
+    id: createLocalMessageId(),
+    message_type: messageType,
+    sender_id: senderId,
+    sent_at: new Date().toISOString(),
+    status: "sending"
+  };
+
+  return message;
+}
+
+function isSameMessage(source: IDataMessage, target: IDataMessage): boolean {
+  if (source.id === target.id && source.id > 0) {
+    return true;
+  }
+
+  return Boolean(source.client_msg_id && target.client_msg_id && source.client_msg_id === target.client_msg_id);
+}
+
+function hasMessage(currentMessages: IDataMessage[], nextMessage: IDataMessage): boolean {
+  return currentMessages.some(item => {
+    return isSameMessage(item, nextMessage);
+  });
+}
+
+function mergeMessage(currentMessages: IDataMessage[], nextMessage: IDataMessage): IDataMessage[] {
+  const messageIndex = currentMessages.findIndex(item => {
+    return isSameMessage(item, nextMessage);
+  });
+
+  if (messageIndex === -1) {
+    return [
+      ...currentMessages,
+      nextMessage
+    ];
+  }
+
+  return currentMessages.map((item, index) => {
+    return index === messageIndex ? nextMessage : item;
+  });
+}
+
+function updateConversationSummary(
+    currentConversations: IDataConversationListItem[],
+    messageItem: IDataMessage,
+    options: IUpdateConversationSummaryOptions
+): IDataConversationListItem[] {
+  return currentConversations.map(conversation => {
+    if (conversation.id !== messageItem.conversation_id) {
+      return conversation;
+    }
+
+    const shouldIncreaseUnread = messageItem.conversation_id !== options.activeConversationId && messageItem.sender_id !== options.currentUserId;
+
+    return {
+      ...conversation,
+      last_message: messageItem,
+      last_message_at: messageItem.sent_at || conversation.last_message_at,
+      last_message_id: messageItem.id,
+      unread_count: (conversation.unread_count || 0) + (shouldIncreaseUnread ? 1 : 0)
+    };
+  });
+}
+
+function shouldRefreshForRealtimeMessage(
+    eventType: string | undefined,
+    messageItem: IDataMessage,
+    currentMessages: IDataMessage[]
+): boolean {
+  if (eventType === "message.ack") {
+    return false;
+  }
+
+  return !hasMessage(currentMessages, messageItem);
+}
+
+function markMessageFailed(currentMessages: IDataMessage[], clientMsgId: string): IDataMessage[] {
+  return currentMessages.map(item => {
+    if (item.client_msg_id !== clientMsgId) {
+      return item;
+    }
+
+    return {
+      ...item,
+      status: "failed"
+    };
+  });
+}
+
+function replaceSendingMessage(currentMessages: IDataMessage[], nextMessage: IDataMessage): IDataMessage[] {
+  if (!nextMessage.client_msg_id) {
+    return currentMessages;
+  }
+
+  return currentMessages.map(item => {
+    if (item.client_msg_id === nextMessage.client_msg_id && item.status === "sending") {
+      return nextMessage;
+    }
+
+    return item;
+  });
+}
+
 function isFormValidationError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "errorFields" in error;
 }
@@ -93,11 +225,18 @@ function getActionErrorMessage(error: unknown, fallback: string): string {
 }
 
 export {
+  createLocalSendingMessage,
   formatDateTime,
   getActionErrorMessage,
   getConversationTitle,
   getUserName,
+  hasMessage,
   isFormValidationError,
+  markMessageFailed,
+  mergeMessage,
   pickWsMessage,
-  readMessageText
+  readMessageText,
+  replaceSendingMessage,
+  shouldRefreshForRealtimeMessage,
+  updateConversationSummary
 };
