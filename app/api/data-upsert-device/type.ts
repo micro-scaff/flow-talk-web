@@ -3,9 +3,8 @@ import type {
 } from "../shared/type";
 
 export interface IParamsUpsertDevice {
-  ["device_id"]: string;
-  platform: string;
-  ["push_token"]?: string;
+  data: Record<string, unknown>;
+  ["user_id"]: number;
 }
 
 export type IDataUpsertDevice = IDataDevice;

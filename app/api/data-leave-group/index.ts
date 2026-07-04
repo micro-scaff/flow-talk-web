@@ -8,7 +8,7 @@ import type {
 } from "./type";
 
 function dataLeaveGroup(params: IParamsLeaveGroup): Promise<IDataLeaveGroup> {
-  return apiClient.post<IDataLeaveGroup, Record<string, never>>(`/api/conversations/${params.conversationId}/leave`, {});
+  return apiClient.post<IDataLeaveGroup, IParamsLeaveGroup>("/api/conversations/leave", params);
 }
 
 export { dataLeaveGroup };

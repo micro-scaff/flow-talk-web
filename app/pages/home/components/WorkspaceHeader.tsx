@@ -1,7 +1,8 @@
 import {
   LaptopOutlined,
   PlusOutlined,
-  SearchOutlined
+  SearchOutlined,
+  TeamOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -75,6 +76,18 @@ function WorkspaceHeader({
       </div>
 
       <Space>
+        <Tooltip title={state.selectedGroupUserIds.length > 0 ? "基于左侧选中人员创建对话" : "先在左侧选择人员"}>
+          <Button
+            className="flow-topbar-action"
+            disabled={state.selectedGroupUserIds.length === 0}
+            icon={<TeamOutlined />}
+            type="primary"
+            onClick={actions.handleOpenGroupFromSelection}>
+            创建对话
+            {state.selectedGroupUserIds.length > 0 ? ` ${state.selectedGroupUserIds.length}` : ""}
+          </Button>
+        </Tooltip>
+
         <Input
           allowClear
           className="flow-search-input flow-message-search"

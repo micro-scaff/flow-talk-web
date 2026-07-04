@@ -8,13 +8,8 @@ import type {
 } from "./type";
 
 function dataUpdateGroupProfile(params: IParamsUpdateGroupProfile): Promise<IDataUpdateGroupProfile> {
-  const {
-    conversationId,
-    ...payload
-  } = params;
-
-  return apiClient.request<IDataUpdateGroupProfile>(`/api/conversations/${conversationId}`, {
-    data: payload,
+  return apiClient.request<IDataUpdateGroupProfile>("/api/conversations/profile", {
+    data: params,
     method: "PATCH"
   });
 }

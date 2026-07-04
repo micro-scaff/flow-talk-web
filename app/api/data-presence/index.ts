@@ -10,7 +10,7 @@ import type {
 } from "./type";
 
 function dataPresence(params: IParamsPresence): Promise<IDataPresenceDetail> {
-  return apiClient.get<IDataPresenceDetail>(`/api/users/${params.userId}/presence`);
+  return apiClient.post<IDataPresenceDetail, IParamsPresence>("/api/users/presence", params);
 }
 
 function dataBatchPresence(params: IParamsBatchPresence): Promise<IDataBatchPresence> {

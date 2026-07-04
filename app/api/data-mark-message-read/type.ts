@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsMarkMessageRead {
-  messageId: number;
+  ["message_id"]: number;
 }
 
 export type IDataMarkMessageRead = IDataEmpty | null;

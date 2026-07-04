@@ -3,9 +3,9 @@ import type {
 } from "../shared/type";
 
 export interface IParamsMessageSearch {
-  conversationId?: number;
+  ["conversation_id"]?: number;
+  keyword: string;
   limit?: number;
-  q: string;
 }
 
 export type IDataMessageSearch = IDataMessage[];

@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsPresence {
-  userId: number;
+  ["user_id"]: number;
 }
 
 export interface IParamsBatchPresence {

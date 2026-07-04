@@ -1,18 +1,15 @@
 import {
-  CheckCircleOutlined,
   LogoutOutlined,
   MessageOutlined,
   MoonOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SunOutlined,
-  TeamOutlined
+  SunOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
   Badge,
   Button,
-  Checkbox,
   Input,
   Layout,
   List,
@@ -169,17 +166,6 @@ function ConversationSidebar({
                 人在线
               </span>
             </div>
-
-            <Button
-              className="flow-compact-primary"
-              disabled={state.selectedGroupUserIds.length === 0}
-              icon={<TeamOutlined />}
-              type="primary"
-              onClick={actions.handleOpenGroupFromSelection}>
-              创建群聊
-              {" · "}
-              {state.selectedGroupUserIds.length}
-            </Button>
           </div>
 
           <Input
@@ -236,7 +222,9 @@ function ConversationSidebar({
               return (
                 <List.Item
                   className={`flow-contact-row ${selected ? "is-selected" : ""}`}
-                  onClick={() => actions.toggleSelectedGroupUser(userId)}>
+                  onClick={() => {
+                    actions.toggleSelectedGroupUser(userId);
+                  }}>
                   <List.Item.Meta
                     avatar={(
                       <Badge
@@ -269,48 +257,19 @@ function ConversationSidebar({
                           {getUserName(user)}
                         </Text>
 
-                        <Space size={6}>
-                          <Tooltip title="发消息">
-                            <Button
-                              icon={<MessageOutlined />}
-                              shape="circle"
-                              size="small"
-                              type="text"
-                              onClick={event => {
-                                event.stopPropagation();
-                                return void actions.handleCreateDirectWithUser(userId);
-                              }} />
-                          </Tooltip>
-
-                          <Checkbox
-                            aria-label={`选择 ${getUserName(user)} 建群`}
-                            checked={selected}
-                            onClick={event => {
-                              event.stopPropagation();
-                            }}
-                            onChange={() => {
-                              actions.toggleSelectedGroupUser(userId);
-                            }} />
-                        </Space>
+                        {selected && (
+                          <Tag
+                            className="m-0 rounded-full px-2 font-bold"
+                            color="blue">
+                            已选
+                          </Tag>
+                        )}
                       </div>
                     )} />
                 </List.Item>
               );
             }} />
         </Spin>
-
-        {state.selectedGroupUserIds.length > 0 && (
-          <footer className="flow-sidebar-footer">
-            <Button
-              block
-              className="flow-footer-button"
-              icon={<CheckCircleOutlined />}
-              type="primary"
-              onClick={actions.handleOpenGroupFromSelection}>
-              创建群聊
-            </Button>
-          </footer>
-        )}
       </div>
     </Sider>
   );

@@ -8,7 +8,7 @@ import type {
 } from "./type";
 
 function dataDeleteDevice(params: IParamsDeleteDevice): Promise<IDataDeleteDevice> {
-  return apiClient.delete<IDataDeleteDevice>(`/api/devices/${params.deviceId}`);
+  return apiClient.delete<IDataDeleteDevice, IParamsDeleteDevice>("/api/devices", params);
 }
 
 export { dataDeleteDevice };

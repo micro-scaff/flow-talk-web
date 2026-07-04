@@ -579,11 +579,17 @@ a {
   margin: 0;
   padding: 7px 10px;
   border-radius: 0;
+  cursor: pointer;
 }
 
 .flow-contact-row.ant-list-item:hover,
 .flow-contact-row.ant-list-item.is-selected {
   background: var(--flow-surface-hover);
+}
+
+.flow-contact-row.ant-list-item.is-selected {
+  border-left: 4px solid var(--flow-primary);
+  padding-left: 6px;
 }
 
 .flow-contact-empty {
@@ -635,6 +641,12 @@ a {
   border-bottom: 1px solid var(--flow-border);
   background: var(--flow-surface);
   color: var(--flow-text);
+}
+
+.flow-topbar-action.ant-btn {
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 900;
 }
 
 .flow-chat-panel {
@@ -725,13 +737,14 @@ a {
 
 .flow-composer-inner {
   display: flex;
-  width: min(760px, 100%);
+  width: 100%;
   align-items: flex-end;
   gap: 8px;
-  margin: 0 auto;
 }
 
 .flow-message-input.ant-input {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 56px;
   border: 0;
   border-radius: 8px;

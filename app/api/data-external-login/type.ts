@@ -7,8 +7,4 @@ export interface IParamsExternalLogin {
   provider: string;
 }
 
-export interface IDataExternalLogin {
-  code?: number;
-  data?: IDataLogin;
-  message?: string;
-}
+export type IDataExternalLogin = IDataLogin;

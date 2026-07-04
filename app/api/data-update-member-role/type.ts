@@ -4,9 +4,9 @@ import type {
 } from "../shared/type";
 
 export interface IParamsUpdateMemberRole {
-  conversationId: number;
+  ["conversation_id"]: number;
   role: TConversationMemberRole | string;
-  userId: number;
+  ["user_id"]: number;
 }
 
 export type IDataUpdateMemberRole = IDataConversationMember;

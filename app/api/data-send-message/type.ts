@@ -7,7 +7,7 @@ import type {
 export interface IParamsSendMessage {
   ["client_msg_id"]: string;
   content: IDataMessageContent;
-  conversationId: number;
+  ["conversation_id"]: number;
   ["message_type"]: TMessageType;
 }
 

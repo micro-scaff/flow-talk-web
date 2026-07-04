@@ -7,7 +7,7 @@ import type {
 } from "./type";
 
 function dataListUsers(): Promise<IDataListUsers> {
-  return apiClient.get<IDataListUsers>("/admin/users");
+  return apiClient.get<IDataListUsers>("/api/admin/users");
 }
 
 export { dataListUsers };

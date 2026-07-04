@@ -8,12 +8,7 @@ import type {
 } from "./type";
 
 function dataMarkConversationRead(params: IParamsMarkConversationRead): Promise<IDataMarkConversationRead> {
-  const {
-    conversationId,
-    ...payload
-  } = params;
-
-  return apiClient.post<IDataMarkConversationRead, Omit<IParamsMarkConversationRead, "conversationId">>(`/api/conversations/${conversationId}/read`, payload);
+  return apiClient.post<IDataMarkConversationRead, IParamsMarkConversationRead>("/api/conversations/read", params);
 }
 
 export { dataMarkConversationRead };

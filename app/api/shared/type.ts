@@ -74,11 +74,13 @@ export interface IDataReadState {
 }
 
 export interface IDataDevice {
-  ["device_id"]: string;
+  data?: Record<string, unknown>;
+  ["device_id"]?: string;
   id: number;
   ["last_seen_at"]?: string;
   platform?: string;
   ["push_token"]?: string;
+  ["updated_at"]?: string;
   ["user_id"]: number;
 }
 

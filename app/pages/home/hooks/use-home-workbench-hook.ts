@@ -371,7 +371,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       const response = await dataSendMessage({
         client_msg_id: pendingMessage.clientMsgId,
         content: pendingMessage.content || {},
-        conversationId: pendingMessage.conversationId,
+        conversation_id: pendingMessage.conversationId,
         message_type: pendingMessage.messageType || "text"
       });
 
@@ -404,12 +404,19 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setDevices(deviceList);
   }, []);
 
-  const upsertCurrentDevice = useCallback(async (showSuccess: boolean): Promise<void> => {
+  const upsertCurrentDevice = useCallback(async (showSuccess: boolean, userId = currentUser?.id): Promise<void> => {
+    if (!userId) {
+      return;
+    }
+
     try {
       await dataUpsertDevice({
-        device_id: deviceId,
-        platform: getDevicePlatform(),
-        push_token: ""
+        data: {
+          app_version: "1.0.0",
+          device_id: deviceId,
+          platform: getDevicePlatform()
+        },
+        user_id: userId
       });
 
       await loadDevices();
@@ -423,6 +430,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       }
     }
   }, [
+    currentUser?.id,
     deviceId,
     loadDevices,
     reportError
@@ -477,7 +485,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       void loadPresence(userList).catch(error => {
         reportError(error, "在线状态加载失败");
       });
-      void upsertCurrentDevice(false);
+      void upsertCurrentDevice(false, userData.id);
 
       const routeConversationId = params.conversationId ? Number(params.conversationId) : null;
 
@@ -510,10 +518,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         messagePage
       ] = await Promise.all([
         dataConversationDetail({
-          conversationId
+          conversation_id: conversationId
         }),
         dataMessageList({
-          conversationId,
+          conversation_id: conversationId,
           limit: 30
         })
       ]);
@@ -534,7 +542,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
         // 已读状态是辅助写入，失败不应打断用户阅读消息。
         void dataMarkConversationRead({
-          conversationId,
+          conversation_id: conversationId,
           last_read_message_id: lastMessageId
         }).catch(error => {
           reportError(error, "标记会话已读失败");
@@ -611,6 +619,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         target_user_id: userId
       });
 
+      setSelectedGroupUserIds([]);
       await loadConversations();
       handleSelectConversation(conversation.id);
     } catch (error) {
@@ -644,6 +653,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       return;
     }
 
+    if (selectedGroupUserIds.length === 1) {
+      void handleCreateDirectWithUser(selectedGroupUserIds[0] as number);
+
+      return;
+    }
+
     groupForm.setFieldsValue({
       memberIds: selectedGroupUserIds,
       title: ""
@@ -651,6 +666,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setGroupModalOpen(true);
   }, [
     groupForm,
+    handleCreateDirectWithUser,
     selectedGroupUserIds
   ]);
 
@@ -690,7 +706,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       const values = await addMemberForm.validateFields();
 
       await dataAddGroupMembers({
-        conversationId: activeConversationId,
+        conversation_id: activeConversationId,
         user_ids: values.userIds
       });
 
@@ -732,7 +748,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
       const response = await dataUpdateGroupProfile({
         avatar_url: values.avatarUrl,
-        conversationId: activeConversationId,
+        conversation_id: activeConversationId,
         title: values.title
       });
 
@@ -759,8 +775,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     try {
       await dataRemoveGroupMember({
-        conversationId: activeConversationId,
-        userId
+        conversation_id: activeConversationId,
+        user_id: userId
       });
 
       await loadActiveConversation(activeConversationId);
@@ -783,9 +799,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     try {
       await dataUpdateMemberRole({
-        conversationId: activeConversationId,
+        conversation_id: activeConversationId,
         role,
-        userId
+        user_id: userId
       });
 
       await loadActiveConversation(activeConversationId);
@@ -808,7 +824,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     try {
       await dataLeaveGroup({
-        conversationId: activeConversationId
+        conversation_id: activeConversationId
       });
 
       const nextConversations = await loadConversations();
@@ -906,9 +922,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     try {
       const results = await dataMessageSearch({
-        conversationId: activeConversationId || undefined,
-        limit: 20,
-        q: searchText.trim()
+        conversation_id: activeConversationId || undefined,
+        keyword: searchText.trim(),
+        limit: 20
       });
 
       setSearchResults(results);

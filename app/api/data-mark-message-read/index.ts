@@ -8,7 +8,7 @@ import type {
 } from "./type";
 
 function dataMarkMessageRead(params: IParamsMarkMessageRead): Promise<IDataMarkMessageRead> {
-  return apiClient.post<IDataMarkMessageRead, Record<string, never>>(`/api/messages/${params.messageId}/read`, {});
+  return apiClient.post<IDataMarkMessageRead, IParamsMarkMessageRead>("/api/messages/read", params);
 }
 
 export { dataMarkMessageRead };

@@ -8,12 +8,7 @@ import type {
 } from "./type";
 
 function dataSendMessage(params: IParamsSendMessage): Promise<IDataSendMessage> {
-  const {
-    conversationId,
-    ...payload
-  } = params;
-
-  return apiClient.post<IDataSendMessage, Omit<IParamsSendMessage, "conversationId">>(`/api/conversations/${conversationId}/messages`, payload);
+  return apiClient.post<IDataSendMessage, IParamsSendMessage>("/api/conversations/messages", params);
 }
 
 export { dataSendMessage };

@@ -193,6 +193,14 @@ function WorkspaceDialogs({
               emptyText: <Empty description="暂无设备" />
             }}
             renderItem={device => {
+              const deviceData = device.data || {};
+
+              const deviceId = typeof deviceData.device_id === "string" ? deviceData.device_id : device.device_id || String(device.id);
+
+              const platform = typeof deviceData.platform === "string" ? deviceData.platform : device.platform || "web";
+
+              const updatedAt = device.updated_at || device.last_seen_at;
+
               return (
                 <List.Item
                   actions={[
@@ -202,13 +210,13 @@ function WorkspaceDialogs({
                       key="delete"
                       type="text"
                       onClick={() => {
-                        return void actions.handleDeleteDevice(device.device_id);
+                        return void actions.handleDeleteDevice(deviceId);
                       }} />
                   ]}>
                   <List.Item.Meta
                     avatar={<Avatar icon={<LaptopOutlined />} />}
-                    description={device.last_seen_at ? `最后活跃：${formatDateTime(device.last_seen_at)}` : "等待同步"}
-                    title={device.device_id === state.deviceId ? `${device.platform || "web"}（当前）` : device.platform || "web"} />
+                    description={updatedAt ? `最后活跃：${formatDateTime(updatedAt)}` : "等待同步"}
+                    title={deviceId === state.deviceId ? `${platform}（当前）` : platform} />
                 </List.Item>
               );
             }} />

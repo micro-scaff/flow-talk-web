@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsMarkConversationRead {
-  conversationId: number;
+  ["conversation_id"]: number;
   ["last_read_message_id"]: number;
 }
 

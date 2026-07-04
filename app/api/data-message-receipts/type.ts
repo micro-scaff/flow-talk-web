@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsMessageReceipts {
-  messageId: number;
+  ["message_id"]: number;
 }
 
 export type IDataMessageReceipts = IDataMessageReceipt[];

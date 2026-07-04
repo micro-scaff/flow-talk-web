@@ -30,7 +30,7 @@ const HEARTBEAT_INTERVAL_MS = 25_000;
 const RECONNECT_DELAY_MS = 2000;
 
 function buildWsUrl(token: string, deviceId: string): string {
-  const url = new URL("/ws", API_BASE_URL);
+  const url = new URL("/api/ws", API_BASE_URL);
 
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.searchParams.set("token", token);

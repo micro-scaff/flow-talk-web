@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsConversationDetail {
-  conversationId: number;
+  ["conversation_id"]: number;
 }
 
 export type IDataConversationDetail = IDataConversation;

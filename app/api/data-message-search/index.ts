@@ -9,15 +9,17 @@ import type {
 
 function dataMessageSearch(params: IParamsMessageSearch): Promise<IDataMessageSearch> {
   const {
-    conversationId,
-    ...query
+    conversation_id: conversationId
   } = params;
 
   if (conversationId) {
-    return apiClient.get<IDataMessageSearch, Omit<IParamsMessageSearch, "conversationId">>(`/api/conversations/${conversationId}/messages/search`, query);
+    return apiClient.post<IDataMessageSearch, IParamsMessageSearch>("/api/conversations/messages/search", params);
   }
 
-  return apiClient.get<IDataMessageSearch, Omit<IParamsMessageSearch, "conversationId">>("/api/messages/search", query);
+  return apiClient.post<IDataMessageSearch, Omit<IParamsMessageSearch, "conversation_id">>("/api/messages/search", {
+    keyword: params.keyword,
+    limit: params.limit
+  });
 }
 
 export { dataMessageSearch };

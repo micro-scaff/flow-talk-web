@@ -8,7 +8,7 @@ import type {
 } from "./type";
 
 function dataRemoveGroupMember(params: IParamsRemoveGroupMember): Promise<IDataRemoveGroupMember> {
-  return apiClient.delete<IDataRemoveGroupMember>(`/api/conversations/${params.conversationId}/members/${params.userId}`);
+  return apiClient.delete<IDataRemoveGroupMember, IParamsRemoveGroupMember>("/api/conversations/members", params);
 }
 
 export { dataRemoveGroupMember };

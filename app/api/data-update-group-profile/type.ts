@@ -4,8 +4,8 @@ import type {
 
 export interface IParamsUpdateGroupProfile {
   ["avatar_url"]?: string;
-  conversationId: number;
-  title?: string;
+  ["conversation_id"]: number;
+  title: string;
 }
 
 export type IDataUpdateGroupProfile = IDataConversation;

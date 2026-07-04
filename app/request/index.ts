@@ -16,6 +16,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8080
 
 const AUTH_TOKEN_KEY = "flow-talk-token";
 
+const AUTH_SESSION_KEY = "flow-talk-auth-session";
+
 const authTokenStorage = {
   key: AUTH_TOKEN_KEY,
   get() {
@@ -36,6 +38,32 @@ const authTokenStorage = {
     }
   }
 };
+
+function clearAuthState(): void {
+  authTokenStorage.remove();
+
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(AUTH_SESSION_KEY);
+}
+
+function redirectToLogin(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  const {
+    location
+  } = window;
+
+  if (location.pathname === "/login") {
+    return;
+  }
+
+  location.replace("/login");
+}
 
 function pickResponseErrorMessage(errorMessage: string, error: unknown): string {
   if (typeof error === "object" && error !== null && "data" in error) {
@@ -71,7 +99,8 @@ function createRequestClient(baseUrl: string, options?: RequestClientOptions): R
   });
 
   async function doReAuthenticate(): Promise<void> {
-    authTokenStorage.remove();
+    clearAuthState();
+    redirectToLogin();
   }
 
   async function doRefreshToken(): Promise<string> {

@@ -8,12 +8,7 @@ import type {
 } from "./type";
 
 function dataAddGroupMembers(params: IParamsAddGroupMembers): Promise<IDataAddGroupMembers> {
-  const {
-    conversationId,
-    ...payload
-  } = params;
-
-  return apiClient.post<IDataAddGroupMembers, Omit<IParamsAddGroupMembers, "conversationId">>(`/api/conversations/${conversationId}/members`, payload);
+  return apiClient.post<IDataAddGroupMembers, IParamsAddGroupMembers>("/api/conversations/members", params);
 }
 
 export { dataAddGroupMembers };

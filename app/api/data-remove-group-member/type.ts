@@ -3,8 +3,8 @@ import type {
 } from "../shared/type";
 
 export interface IParamsRemoveGroupMember {
-  conversationId: number;
-  userId: number;
+  ["conversation_id"]: number;
+  ["user_id"]: number;
 }
 
 export type IDataRemoveGroupMember = IDataEmpty | null;

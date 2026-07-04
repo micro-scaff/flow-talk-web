@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsAddGroupMembers {
-  conversationId: number;
+  ["conversation_id"]: number;
   ["user_ids"]: number[];
 }
 

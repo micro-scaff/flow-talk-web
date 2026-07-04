@@ -8,7 +8,7 @@ import type {
 } from "./type";
 
 function dataMessageReceipts(params: IParamsMessageReceipts): Promise<IDataMessageReceipts> {
-  return apiClient.get<IDataMessageReceipts>(`/api/messages/${params.messageId}/receipts`);
+  return apiClient.post<IDataMessageReceipts, IParamsMessageReceipts>("/api/messages/receipts", params);
 }
 
 export { dataMessageReceipts };

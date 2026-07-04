@@ -8,7 +8,7 @@ import type {
 } from "./type";
 
 function dataConversationDetail(params: IParamsConversationDetail): Promise<IDataConversationDetail> {
-  return apiClient.get<IDataConversationDetail>(`/api/conversations/${params.conversationId}`);
+  return apiClient.post<IDataConversationDetail, IParamsConversationDetail>("/api/conversations/detail", params);
 }
 
 export { dataConversationDetail };

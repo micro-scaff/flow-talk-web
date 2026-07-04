@@ -8,16 +8,8 @@ import type {
 } from "./type";
 
 function dataUpdateMemberRole(params: IParamsUpdateMemberRole): Promise<IDataUpdateMemberRole> {
-  const {
-    conversationId,
-    userId,
-    role
-  } = params;
-
-  return apiClient.request<IDataUpdateMemberRole>(`/api/conversations/${conversationId}/members/${userId}/role`, {
-    data: {
-      role
-    },
+  return apiClient.request<IDataUpdateMemberRole>("/api/conversations/members/role", {
+    data: params,
     method: "PATCH"
   });
 }

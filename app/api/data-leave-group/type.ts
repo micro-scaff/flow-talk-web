@@ -3,7 +3,7 @@ import type {
 } from "../shared/type";
 
 export interface IParamsLeaveGroup {
-  conversationId: number;
+  ["conversation_id"]: number;
 }
 
 export type IDataLeaveGroup = IDataEmpty | null;

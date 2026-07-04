@@ -4,7 +4,7 @@ import type {
 
 export interface IParamsMessageList {
   ["before_id"]?: number;
-  conversationId: number;
+  ["conversation_id"]: number;
   limit?: number;
 }
 

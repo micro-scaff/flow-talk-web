@@ -8,12 +8,7 @@ import type {
 } from "./type";
 
 function dataMessageList(params: IParamsMessageList): Promise<IDataMessageList> {
-  const {
-    conversationId,
-    ...query
-  } = params;
-
-  return apiClient.get<IDataMessageList, Omit<IParamsMessageList, "conversationId">>(`/api/conversations/${conversationId}/messages`, query);
+  return apiClient.post<IDataMessageList, IParamsMessageList>("/api/conversations/messages/list", params);
 }
 
 export { dataMessageList };
