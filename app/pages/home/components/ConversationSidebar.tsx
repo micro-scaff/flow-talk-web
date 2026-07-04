@@ -121,7 +121,9 @@ function ConversationSidebar({
                   className="flow-icon-button"
                   icon={<ReloadOutlined />}
                   shape="circle"
-                  onClick={() => void actions.handleRefresh()} />
+                  onClick={() => {
+                    void actions.handleRefresh();
+                  }} />
               </Tooltip>
 
               <Tooltip title="退出登录">
@@ -160,10 +162,9 @@ function ConversationSidebar({
           <div className="flow-sidebar-status">
             <div className="flow-online-summary">
               <span className="flow-status-dot" />
+
               <span>
-                {onlineUsers.length}
-                {" "}
-                人在线
+                {`${onlineUsers.length} 人在线`}
               </span>
             </div>
           </div>
@@ -186,7 +187,9 @@ function ConversationSidebar({
             </Text>
           </div>
 
-          <Tag className="m-0 rounded-full px-2 font-bold" color="blue">
+          <Tag
+            className="m-0 rounded-full px-2 font-bold"
+            color="blue">
             {state.selectedGroupUserIds.length}
           </Tag>
         </div>
@@ -275,6 +278,4 @@ function ConversationSidebar({
   );
 }
 
-export {
-  ConversationSidebar
-};
+export { ConversationSidebar };

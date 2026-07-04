@@ -193,13 +193,13 @@ function WorkspaceDialogs({
               emptyText: <Empty description="暂无设备" />
             }}
             renderItem={device => {
-              const deviceData = device.data || {};
+              const deviceData = device.data;
 
-              const deviceId = typeof deviceData.device_id === "string" ? deviceData.device_id : device.device_id || String(device.id);
+              const deviceId = typeof deviceData.device_id === "string" ? deviceData.device_id : String(device.id);
 
-              const platform = typeof deviceData.platform === "string" ? deviceData.platform : device.platform || "web";
+              const platform = typeof deviceData.platform === "string" ? deviceData.platform : "web";
 
-              const updatedAt = device.updated_at || device.last_seen_at;
+              const updatedAt = device.updated_at;
 
               return (
                 <List.Item
@@ -210,7 +210,7 @@ function WorkspaceDialogs({
                       key="delete"
                       type="text"
                       onClick={() => {
-                        return void actions.handleDeleteDevice(deviceId);
+                        return void actions.handleDeleteDevice();
                       }} />
                   ]}>
                   <List.Item.Meta

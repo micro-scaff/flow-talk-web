@@ -155,7 +155,11 @@ function updateConversationSummary(
       return conversation;
     }
 
-    const shouldIncreaseUnread = messageItem.conversation_id !== options.activeConversationId && messageItem.sender_id !== options.currentUserId;
+    const isSameClientMessage = Boolean(conversation.last_message?.client_msg_id && messageItem.client_msg_id && conversation.last_message.client_msg_id === messageItem.client_msg_id);
+
+    const isRepeatedMessage = conversation.last_message_id === messageItem.id || isSameClientMessage;
+
+    const shouldIncreaseUnread = !isRepeatedMessage && messageItem.conversation_id !== options.activeConversationId && messageItem.sender_id !== options.currentUserId;
 
     return {
       ...conversation,

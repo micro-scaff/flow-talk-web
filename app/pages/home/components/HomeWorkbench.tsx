@@ -66,6 +66,4 @@ function HomeWorkbench({
   );
 }
 
-export {
-  HomeWorkbench
-};
+export { HomeWorkbench };

@@ -3,16 +3,12 @@ import {
 } from "~/request";
 
 import type {
-  IDataDeleteDevice,
-  IParamsDeleteDevice
+  IDataDeleteDevice
 } from "./type";
 
-function dataDeleteDevice(params: IParamsDeleteDevice): Promise<IDataDeleteDevice> {
-  return apiClient.delete<IDataDeleteDevice, IParamsDeleteDevice>("/api/devices", params);
+function dataDeleteDevice(): Promise<IDataDeleteDevice> {
+  return apiClient.delete<IDataDeleteDevice>("/api/devices");
 }
 
 export { dataDeleteDevice };
-export type {
-  IDataDeleteDevice,
-  IParamsDeleteDevice
-} from "./type";
+export type { IDataDeleteDevice } from "./type";

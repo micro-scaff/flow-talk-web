@@ -73,13 +73,16 @@ export interface IDataReadState {
   ["last_read_message_id"]?: number;
 }
 
+export interface IDataDevicePayload {
+  ["app_version"]?: unknown;
+  ["device_id"]?: unknown;
+  platform?: unknown;
+  [key: string]: unknown;
+}
+
 export interface IDataDevice {
-  data?: Record<string, unknown>;
-  ["device_id"]?: string;
+  data: IDataDevicePayload;
   id: number;
-  ["last_seen_at"]?: string;
-  platform?: string;
-  ["push_token"]?: string;
   ["updated_at"]?: string;
   ["user_id"]: number;
 }

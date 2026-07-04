@@ -79,7 +79,7 @@ export interface IHomeWorkbenchActions {
   handleCreateDirect: () => Promise<void>;
   handleCreateDirectWithUser: (userId: number) => Promise<void>;
   handleCreateGroup: () => Promise<void>;
-  handleDeleteDevice: (targetDeviceId: string) => Promise<void>;
+  handleDeleteDevice: () => Promise<void>;
   handleLeaveGroup: () => Promise<void>;
   handleOpenGroupFromSelection: () => void;
   handleLogout: () => void;

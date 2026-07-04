@@ -943,11 +943,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     upsertCurrentDevice
   ]);
 
-  const handleDeleteDevice = useCallback(async (targetDeviceId: string): Promise<void> => {
+  const handleDeleteDevice = useCallback(async (): Promise<void> => {
     try {
-      await dataDeleteDevice({
-        deviceId: targetDeviceId
-      });
+      await dataDeleteDevice();
 
       await loadDevices();
     } catch (error) {

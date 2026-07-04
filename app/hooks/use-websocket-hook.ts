@@ -110,15 +110,18 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
 
     shouldReconnectRef.current = true;
 
+    let removeSocketListeners: (() => void) | null = null;
+
     const connect = (): void => {
       clearHeartbeatTimer();
       setStatus("connecting");
+      removeSocketListeners?.();
 
       const socket = new WebSocket(buildWsUrl(token, deviceId));
 
       socketRef.current = socket;
 
-      socket.addEventListener("open", () => {
+      const handleOpen = (): void => {
         setStatus("open");
         clearHeartbeatTimer();
         heartbeatTimerRef.current = window.setInterval(() => {
@@ -131,15 +134,15 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
             type: "ping"
           }));
         }, HEARTBEAT_INTERVAL_MS);
-      });
+      };
 
-      socket.addEventListener("message", event => {
+      const handleMessage = (event: MessageEvent): void => {
         const parsedEvent = parseWsEvent(event.data);
 
         setLastEvent(parsedEvent);
-      });
+      };
 
-      socket.addEventListener("close", () => {
+      const handleClose = (): void => {
         clearHeartbeatTimer();
         setStatus("closed");
 
@@ -147,17 +150,30 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
           clearReconnectTimer();
           reconnectTimerRef.current = window.setTimeout(connect, RECONNECT_DELAY_MS);
         }
-      });
+      };
 
-      socket.addEventListener("error", () => {
+      const handleError = (): void => {
         setStatus("error");
-      });
+      };
+
+      socket.addEventListener("open", handleOpen);
+      socket.addEventListener("message", handleMessage);
+      socket.addEventListener("close", handleClose);
+      socket.addEventListener("error", handleError);
+
+      removeSocketListeners = () => {
+        socket.removeEventListener("open", handleOpen);
+        socket.removeEventListener("message", handleMessage);
+        socket.removeEventListener("close", handleClose);
+        socket.removeEventListener("error", handleError);
+      };
     };
 
     connect();
 
     return () => {
       shouldReconnectRef.current = false;
+      removeSocketListeners?.();
       clearHeartbeatTimer();
       clearReconnectTimer();
       socketRef.current?.close();

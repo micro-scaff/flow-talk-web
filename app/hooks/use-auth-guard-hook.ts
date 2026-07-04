@@ -22,9 +22,5 @@ function useAuthGuardHook(): IAuthGuardState {
   }, []);
 }
 
-export {
-  useAuthGuardHook
-};
-export type {
-  IAuthGuardState
-};
+export { useAuthGuardHook };
+export type { IAuthGuardState };
