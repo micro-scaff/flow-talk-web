@@ -3,12 +3,24 @@ import {
 } from "~/request";
 
 import type {
-  IDataListUsers
+  IDataListUsers,
+  IParamsListUsers
 } from "./type";
 
-function dataListUsers(): Promise<IDataListUsers> {
-  return apiClient.get<IDataListUsers>("/api/admin/users");
+const DEFAULT_LIST_USERS_PARAMS: IParamsListUsers = {
+
+  // 聊天首页需要完整通讯录，所以默认走 all=true；搜索/分页场景可显式传入其它参数。
+  all: true
+};
+
+function dataListUsers(params: IParamsListUsers = DEFAULT_LIST_USERS_PARAMS): Promise<IDataListUsers> {
+  return apiClient.get<IDataListUsers>("/api/users", {
+    params
+  });
 }
 
 export { dataListUsers };
-export type { IDataListUsers } from "./type";
+export type {
+  IDataListUsers,
+  IParamsListUsers
+} from "./type";

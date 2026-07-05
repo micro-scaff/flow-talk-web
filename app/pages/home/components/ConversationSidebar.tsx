@@ -79,9 +79,7 @@ function ConversationSidebar({
 
   return (
     <Sider
-      breakpoint="lg"
       className="flow-sidebar border-r border-[#d9dee8] bg-white"
-      collapsedWidth={0}
       theme="light"
       width={360}>
       <div className="flow-sidebar-shell">

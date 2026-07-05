@@ -6,6 +6,7 @@ import {
 } from "@ant-design/icons";
 import {
   Avatar,
+  Badge,
   Button,
   Input,
   Space,
@@ -38,12 +39,14 @@ function WorkspaceHeader({
     state
   } = viewModel;
 
+  const selectedCount = state.selectedGroupUserIds.length;
+
   return (
     <header className="flow-topbar">
       {/* 左侧展示当前会话上下文，未选中会话时使用默认标题兜底。 */}
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flow-topbar-title flex min-w-0 items-center gap-3">
         <Avatar
-          className="shrink-0 bg-[#e7f3ff] text-[#1877f2]"
+          className="flow-active-avatar shrink-0 bg-[#e7f3ff] text-[#1877f2]"
           size={40}
           src={state.activeConversation?.avatar_url}>
           {state.activeTitle.slice(0, 1)}
@@ -76,18 +79,27 @@ function WorkspaceHeader({
         </div>
       </div>
 
-      <Space>
+      <Space className="flow-topbar-actions">
         {/* 统一创建入口：左侧选 1 人创建单聊，选多人创建群聊。 */}
-        <Tooltip title={state.selectedGroupUserIds.length > 0 ? "基于左侧选中人员创建对话" : "先在左侧选择人员"}>
-          <Button
-            className="flow-topbar-action"
-            disabled={state.selectedGroupUserIds.length === 0}
-            icon={<TeamOutlined />}
-            type="primary"
-            onClick={actions.handleOpenGroupFromSelection}>
-            创建对话
-            {state.selectedGroupUserIds.length > 0 ? ` ${state.selectedGroupUserIds.length}` : ""}
-          </Button>
+        <Tooltip title={selectedCount > 0 ? `基于已选 ${selectedCount} 人创建对话` : "先在联系人栏选择人员"}>
+          <Badge
+            className="flow-create-badge"
+            count={selectedCount}
+            offset={[
+              -2,
+              3
+            ]}
+            size="small">
+            <Button
+              className="flow-topbar-action"
+              disabled={selectedCount === 0}
+              icon={<TeamOutlined />}
+              type="primary"
+              onClick={actions.handleOpenGroupFromSelection}>
+              创建对话
+              {selectedCount > 0 ? ` ${selectedCount}` : ""}
+            </Button>
+          </Badge>
         </Tooltip>
 
         <Input
