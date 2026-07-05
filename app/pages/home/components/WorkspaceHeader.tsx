@@ -40,6 +40,7 @@ function WorkspaceHeader({
 
   return (
     <header className="flow-topbar">
+      {/* 左侧展示当前会话上下文，未选中会话时使用默认标题兜底。 */}
       <div className="flex min-w-0 items-center gap-3">
         <Avatar
           className="shrink-0 bg-[#e7f3ff] text-[#1877f2]"
@@ -76,6 +77,7 @@ function WorkspaceHeader({
       </div>
 
       <Space>
+        {/* 统一创建入口：左侧选 1 人创建单聊，选多人创建群聊。 */}
         <Tooltip title={state.selectedGroupUserIds.length > 0 ? "基于左侧选中人员创建对话" : "先在左侧选择人员"}>
           <Button
             className="flow-topbar-action"

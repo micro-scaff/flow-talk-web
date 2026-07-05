@@ -21,6 +21,8 @@ interface IUpdateConversationSummaryOptions {
 type TNamedUser = Pick<IDataGetCurrentUser, "id" | "nickname" | "username">;
 
 function createLocalMessageId(): number {
+
+  // 本地临时消息使用负数 ID，避免和后端自增正数 ID 冲突。
   return -(Date.now() + Math.floor(Math.random() * 1000));
 }
 
@@ -77,10 +79,14 @@ function pickWsMessage(payload: unknown): IDataMessage | null {
   }
 
   if ("id" in payload && "conversation_id" in payload) {
+
+    // message.ack/message.deliver 当前直接把 Message 放在 payload 中。
     return payload as IDataMessage;
   }
 
   if ("message" in payload) {
+
+    // 兼容后续可能扩展成 { message } 包裹结构的实时事件。
     const eventPayload = payload as {
       message?: IDataMessage;
     };
@@ -100,6 +106,7 @@ function createLocalSendingMessage(params: ICreateLocalMessageParams): IDataMess
     senderId
   } = params;
 
+  // 乐观 UI 先插入 sending 消息；收到 ack 后用同一个 client_msg_id 替换。
   const message: IDataMessage = {
     client_msg_id: clientMsgId,
     content,
@@ -119,6 +126,7 @@ function isSameMessage(source: IDataMessage, target: IDataMessage): boolean {
     return true;
   }
 
+  // 发送中和后端确认消息的 id 不同，client_msg_id 是幂等去重的稳定依据。
   return Boolean(source.client_msg_id && target.client_msg_id && source.client_msg_id === target.client_msg_id);
 }
 
@@ -159,6 +167,7 @@ function updateConversationSummary(
 
     const isRepeatedMessage = conversation.last_message_id === messageItem.id || isSameClientMessage;
 
+    // 当前会话内的消息已经被用户看到，不增加未读；自己发出的消息也不增加未读。
     const shouldIncreaseUnread = !isRepeatedMessage && messageItem.conversation_id !== options.activeConversationId && messageItem.sender_id !== options.currentUserId;
 
     return {
@@ -180,6 +189,7 @@ function shouldRefreshForRealtimeMessage(
     return false;
   }
 
+  // deliver 可能来自一个本地还没加载过的会话，此时需要刷新会话列表补齐入口。
   return !hasMessage(currentMessages, messageItem);
 }
 
@@ -201,6 +211,7 @@ function replaceSendingMessage(currentMessages: IDataMessage[], nextMessage: IDa
     return currentMessages;
   }
 
+  // 只替换 sending 状态，避免晚到的 ack 覆盖已经通过 deliver 合并过的正式消息。
   return currentMessages.map(item => {
     if (item.client_msg_id === nextMessage.client_msg_id && item.status === "sending") {
       return nextMessage;

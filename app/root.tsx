@@ -21,6 +21,8 @@ import {
 } from "./hooks/use-theme-hook";
 
 export const links: Route.LinksFunction = () => {
+
+  // 字体链接放在 root，所有路由共享，避免页面级组件重复声明资源。
   return [
     {
       rel: "preconnect",
@@ -67,6 +69,8 @@ export function Layout({
 
 export default function App(): ReactElement {
   return (
+
+    // 主题状态跨登录页和工作台共享，放在 root 可以避免路由切换时丢失。
     <ThemeProvider>
       <Outlet />
     </ThemeProvider>
@@ -83,6 +87,8 @@ export function ErrorBoundary({
   let stack: string | undefined;
 
   if (isRouteErrorResponse(error)) {
+
+    // React Router 抛出的响应错误单独处理，404 需要给用户更明确的提示。
     message = error.status === 404 ? "404" : "Error";
     details =
       error.status === 404

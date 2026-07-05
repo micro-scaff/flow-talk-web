@@ -82,6 +82,7 @@ import {
 
 const MESSAGE_ACK_TIMEOUT_MS = 8000;
 
+// 多条实时消息连续到达时合并刷新会话列表，避免短时间内重复打接口。
 const REALTIME_REFRESH_DEBOUNCE_MS = 200;
 
 interface IPendingMessage {
@@ -113,10 +114,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const pendingMessagesRef = useRef<Record<string, IPendingMessage>>({});
 
+  // WebSocket 事件回调需要读取最新状态，用 ref 避免把大数组放入 effect 依赖后频繁重建监听逻辑。
   const messagesRef = useRef<IDataMessage[]>([]);
 
   const conversationsRef = useRef<IDataConversationListItem[]>([]);
 
+  // ack 和 deliver 可能都返回同一条消息；这里记录刚确认过的消息，降低重复刷新概率。
   const ackedMessageIdsRef = useRef<Set<number>>(new Set());
 
   const ackedClientMessageIdsRef = useRef<Set<string>>(new Set());
@@ -368,6 +371,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setSending(true);
 
     try {
+
+      // HTTP 发送是 WebSocket 不可用或 ack 超时后的兜底路径，必须复用同一个 client_msg_id。
       const response = await dataSendMessage({
         client_msg_id: pendingMessage.clientMsgId,
         content: pendingMessage.content || {},
@@ -410,6 +415,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     }
 
     try {
+
+      // 设备 data 允许后端透传 JSON，前端保留平台和本地 deviceId 便于调试多端在线。
       await dataUpsertDevice({
         data: {
           app_version: "1.0.0",
@@ -654,6 +661,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     }
 
     if (selectedGroupUserIds.length === 1) {
+
+      // 选中 1 人时右上角统一入口创建单聊；多人时才进入群聊弹窗。
       void handleCreateDirectWithUser(selectedGroupUserIds[0] as number);
 
       return;
@@ -874,6 +883,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       senderId: currentUser.id
     });
 
+    // 先乐观插入本地消息，保证回车后界面即时响应。
     setMessages(currentMessages => {
       return mergeMessage(currentMessages, localMessage);
     });
@@ -891,6 +901,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     });
 
     if (sentByWebSocket) {
+
+      // 超过 ack 等待时间后走 HTTP 兜底，避免消息一直卡在 sending。
       pendingMessage.timeoutId = window.setTimeout(() => {
         const timedOutMessage = clearPendingMessage(requestId);
 
@@ -1012,6 +1024,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     const realtimeMessage = pickWsMessage(wsEvent?.payload);
 
     if (wsEvent?.type === "error") {
+
+      // 服务端返回 error 时优先定位对应 request_id，把本地 sending 消息标记失败。
       const pendingMessage = wsEvent.requestId ? clearPendingMessage(wsEvent.requestId) : null;
 
       if (pendingMessage) {
@@ -1033,6 +1047,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     }
 
     if (wsEvent?.type === "message.ack") {
+
+      // ack 只确认发送方本地消息；真正的广播还可能随后以 deliver 到达。
       const pendingByRequestId = wsEvent.requestId ? clearPendingMessage(wsEvent.requestId) : null;
 
       if (!pendingByRequestId) {

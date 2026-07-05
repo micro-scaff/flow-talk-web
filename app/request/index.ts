@@ -14,8 +14,10 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8080";
 
+// token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
 
+// session key 需要与 utils/auth-session 保持一致，401 时请求层会直接清空完整登录态。
 const AUTH_SESSION_KEY = "flow-talk-auth-session";
 
 const authTokenStorage = {
@@ -65,6 +67,7 @@ function redirectToLogin(): void {
   location.replace("/login");
 }
 
+// @mt-kit/request-axios 可能抛业务响应体，也可能抛 Axios error；这里统一抽取后端 message。
 function pickResponseErrorMessage(errorMessage: string, error: unknown): string {
   if (typeof error === "object" && error !== null && "data" in error) {
     const responseData = error.data as {
@@ -90,6 +93,8 @@ function pickResponseErrorMessage(errorMessage: string, error: unknown): string 
 }
 
 function createRequestClient(baseUrl: string, options?: RequestClientOptions): RequestClient {
+
+  // 业务接口统一返回 { code, data, message }，responseReturn: "data" 让调用方只拿 data 字段。
   const client = new RequestClient({
     paramsSerializer: "brackets",
     responseReturn: "data",
@@ -99,6 +104,8 @@ function createRequestClient(baseUrl: string, options?: RequestClientOptions): R
   });
 
   async function doReAuthenticate(): Promise<void> {
+
+    // 后端 401 代表 token 失效或未登录，直接退出到登录页，不走 refresh token。
     clearAuthState();
     redirectToLogin();
   }
@@ -131,6 +138,7 @@ function createRequestClient(baseUrl: string, options?: RequestClientOptions): R
     }
   }));
 
+  // 当前后端没有 refresh token 接口；保留认证拦截器只负责统一处理 401。
   client.addResponseInterceptor(authenticateResponseInterceptor({
     client,
     doReAuthenticate,
@@ -154,6 +162,7 @@ function createRequestClient(baseUrl: string, options?: RequestClientOptions): R
 
 const apiClient = createRequestClient(API_BASE_URL);
 
+// 不带业务响应解析的原始 client，预留给 favicon、静态探测等非标准响应场景。
 const baseRequestClient = new RequestClient({
   baseURL: API_BASE_URL
 });

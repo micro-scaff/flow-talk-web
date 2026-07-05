@@ -43,6 +43,7 @@ function WorkspaceDialogs({
 
   return (
     <>
+      {/* 兼容旧的单聊选择弹窗；当前主入口优先使用侧栏选择 + 顶部创建按钮。 */}
       <Modal
         okText="创建"
         open={dialogs.directModalOpen}
@@ -73,6 +74,7 @@ function WorkspaceDialogs({
         onOk={() => {
           return void actions.handleCreateGroup();
         }}>
+        {/* 群聊创建只提交 OpenAPI 定义的 title/avatar_url/member_ids 字段。 */}
         <Form
           form={forms.groupForm}
           layout="vertical">
@@ -175,6 +177,7 @@ function WorkspaceDialogs({
         onClose={() => {
           return actions.setDevicesOpen(false);
         }}>
+        {/* 设备上报用于 WebSocket device_id 和离线同步排查，不参与消息展示主流程。 */}
         <Space
           className="w-full"
           direction="vertical">

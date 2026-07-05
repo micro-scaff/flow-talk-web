@@ -47,6 +47,7 @@ function MessagePanel({
 
   return (
     <div className="flow-chat-panel flex h-full min-w-0 flex-col bg-[#f5f7fb]">
+      {/* 搜索结果只展示轻量预览，点击会话或清空后回到正常消息流。 */}
       {state.searchResults.length > 0 && (
         <div className="border-b border-[#eadfb8] bg-[#fff8df] px-6 py-3">
           <Space
@@ -87,6 +88,8 @@ function MessagePanel({
       <div className="flow-chat-scroll">
         <Spin spinning={state.messageLoading}>
           {state.activeConversationId ? (
+
+            // 消息区按左右对齐区分自己和他人；消息去重/排序在 hook 与 utils 中完成。
             <Space
               className="flow-message-stack"
               direction="vertical"
@@ -203,6 +206,7 @@ function MessagePanel({
                 return;
               }
 
+              // Enter 发送、Shift+Enter 换行，保持即时通讯工具的常见输入体验。
               event.preventDefault();
               void actions.handleSendMessage();
             }} />

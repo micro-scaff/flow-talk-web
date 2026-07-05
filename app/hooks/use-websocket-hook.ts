@@ -29,6 +29,7 @@ const HEARTBEAT_INTERVAL_MS = 25_000;
 
 const RECONNECT_DELAY_MS = 2000;
 
+// 后端 WebSocket 入口挂在 /api/ws，协议需要跟随 API_BASE_URL 自动切换 ws/wss。
 function buildWsUrl(token: string, deviceId: string): string {
   const url = new URL("/api/ws", API_BASE_URL);
 
@@ -47,6 +48,8 @@ function parseWsEvent(raw: MessageEvent["data"]): IWebSocketEvent {
   }
 
   try {
+
+    // 服务端事件统一使用 { type, request_id, payload } 信封；hook 内部转成 camelCase。
     const data = JSON.parse(raw) as {
       payload?: unknown;
       ["request_id"]?: string;
@@ -67,6 +70,8 @@ function parseWsEvent(raw: MessageEvent["data"]): IWebSocketEvent {
 }
 
 function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState {
+
+  // socket 和计时器放在 ref 中，避免重连期间触发额外渲染，也便于 cleanup 精准回收。
   const socketRef = useRef<WebSocket | null>(null);
 
   const reconnectTimerRef = useRef<number | null>(null);
@@ -112,6 +117,7 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
 
     let removeSocketListeners: (() => void) | null = null;
 
+    // connect 会被初次连接和 close 后重连共用，因此内部每次都先清理上一条连接的副作用。
     const connect = (): void => {
       clearHeartbeatTimer();
       setStatus("connecting");
@@ -124,6 +130,8 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
       const handleOpen = (): void => {
         setStatus("open");
         clearHeartbeatTimer();
+
+        // 心跳只在 OPEN 状态发送，避免浏览器在 closing/closed 时抛异常。
         heartbeatTimerRef.current = window.setInterval(() => {
           if (socket.readyState !== WebSocket.OPEN) {
             return;
@@ -146,6 +154,7 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
         clearHeartbeatTimer();
         setStatus("closed");
 
+        // 主动卸载组件时 shouldReconnectRef 会被置 false，从而停止自动重连。
         if (shouldReconnectRef.current) {
           clearReconnectTimer();
           reconnectTimerRef.current = window.setTimeout(connect, RECONNECT_DELAY_MS);
@@ -192,6 +201,7 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
         return false;
       }
 
+      // 返回 boolean 让上层决定是否降级到 HTTP 发送消息。
       socketRef.current.send(JSON.stringify(payload));
 
       return true;

@@ -31,6 +31,8 @@ function clientLoader(): Response | null {
   const session = getSession();
 
   if (session?.token) {
+
+    // 已登录用户不再停留在登录页，避免重复提交账号密码覆盖当前会话。
     return redirect("/");
   }
 

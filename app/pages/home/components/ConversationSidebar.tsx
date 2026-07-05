@@ -68,6 +68,7 @@ function ConversationSidebar({
     setKeyword
   ] = useState("");
 
+  // 侧栏只展示在线联系人；离线用户暂不参与发起会话和群聊选择。
   const onlineUsers = state.users.filter(user => {
     const matchesKeyword = !keyword.trim() || getUserName(user).toLowerCase().includes(keyword.trim().toLowerCase()) || user.username?.toLowerCase().includes(keyword.trim().toLowerCase());
 
@@ -84,6 +85,7 @@ function ConversationSidebar({
       theme="light"
       width={360}>
       <div className="flow-sidebar-shell">
+        {/* 顶部区域放全局工具：主题、刷新、退出，以及当前登录用户信息。 */}
         <header className="flow-sidebar-header">
           <div className="flow-brand-row">
             <div className="flow-brand-lockup">
@@ -223,6 +225,8 @@ function ConversationSidebar({
               const selected = state.selectedGroupUserIds.includes(userId);
 
               return (
+
+                // 点击整行只负责选择/取消选择；真正创建对话统一交给右上角按钮。
                 <List.Item
                   className={`flow-contact-row ${selected ? "is-selected" : ""}`}
                   onClick={() => {
