@@ -12,23 +12,7 @@ import type {
   RequestClientOptions
 } from "@mt-kit/request-axios";
 
-const LOCAL_API_BASE_URL = "http://127.0.0.1:8080";
-
-const API_ENV = import.meta.env.VITE_API_ENV;
-
-function resolveApiBaseUrl(): string {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
-  }
-
-  if (API_ENV === "production" && typeof window !== "undefined") {
-    return window.location.origin;
-  }
-
-  return LOCAL_API_BASE_URL;
-}
-
-const API_BASE_URL = resolveApiBaseUrl();
+const API_BASE_URL = "";
 
 // token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
@@ -108,7 +92,7 @@ function pickResponseErrorMessage(errorMessage: string, error: unknown): string 
   return errorMessage || "请求失败，请稍后再试";
 }
 
-function createRequestClient(baseUrl: string, options?: RequestClientOptions): RequestClient {
+function createRequestClient(baseUrl?: string, options?: RequestClientOptions): RequestClient {
 
   // 业务接口统一返回 { code, data, message }，responseReturn: "data" 让调用方只拿 data 字段。
   const client = new RequestClient({
@@ -176,12 +160,10 @@ function createRequestClient(baseUrl: string, options?: RequestClientOptions): R
   return client;
 }
 
-const apiClient = createRequestClient(API_BASE_URL);
+const apiClient = createRequestClient();
 
 // 不带业务响应解析的原始 client，预留给 favicon、静态探测等非标准响应场景。
-const baseRequestClient = new RequestClient({
-  baseURL: API_BASE_URL
-});
+const baseRequestClient = new RequestClient();
 
 export {
   API_BASE_URL,
