@@ -12,7 +12,7 @@ import type {
   RequestClientOptions
 } from "@mt-kit/request-axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8080";
+const API_BASE_URL = "http://127.0.0.1:8080";
 
 // token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
