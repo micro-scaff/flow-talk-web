@@ -6,10 +6,6 @@ import {
   useState
 } from "react";
 
-import {
-  API_BASE_URL
-} from "~/request";
-
 type TWebSocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
 interface IWebSocketEvent {
@@ -29,9 +25,9 @@ const HEARTBEAT_INTERVAL_MS = 25_000;
 
 const RECONNECT_DELAY_MS = 2000;
 
-// 后端 WebSocket 入口挂在 /api/ws，协议需要跟随 API_BASE_URL 自动切换 ws/wss。
+// 后端 WebSocket 入口挂在当前站点的 /api/ws，由 Nginx 代理到服务端。
 function buildWsUrl(token: string, deviceId: string): string {
-  const url = new URL("/api/ws", API_BASE_URL);
+  const url = new URL("/api/ws", window.location.origin);
 
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
   url.searchParams.set("token", token);

@@ -12,8 +12,6 @@ import type {
   RequestClientOptions
 } from "@mt-kit/request-axios";
 
-const API_BASE_URL = "";
-
 // token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
 
@@ -92,15 +90,14 @@ function pickResponseErrorMessage(errorMessage: string, error: unknown): string 
   return errorMessage || "请求失败，请稍后再试";
 }
 
-function createRequestClient(baseUrl?: string, options?: RequestClientOptions): RequestClient {
+function createRequestClient(options?: RequestClientOptions): RequestClient {
 
   // 业务接口统一返回 { code, data, message }，responseReturn: "data" 让调用方只拿 data 字段。
   const client = new RequestClient({
     paramsSerializer: "brackets",
     responseReturn: "data",
     timeout: 10_000,
-    ...options,
-    baseURL: baseUrl
+    ...options
   });
 
   async function doReAuthenticate(): Promise<void> {
@@ -166,7 +163,6 @@ const apiClient = createRequestClient();
 const baseRequestClient = new RequestClient();
 
 export {
-  API_BASE_URL,
   apiClient,
   authTokenStorage,
   baseRequestClient,
