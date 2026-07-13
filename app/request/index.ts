@@ -12,7 +12,23 @@ import type {
   RequestClientOptions
 } from "@mt-kit/request-axios";
 
-const API_BASE_URL = "http://127.0.0.1:8080";
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8080";
+
+const API_ENV = import.meta.env.VITE_API_ENV;
+
+function resolveApiBaseUrl(): string {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+
+  if (API_ENV === "production" && typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  return LOCAL_API_BASE_URL;
+}
+
+const API_BASE_URL = resolveApiBaseUrl();
 
 // token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
