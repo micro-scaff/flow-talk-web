@@ -20,6 +20,15 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true
   },
+  server: {
+    proxy: {
+      "/api": {
+        changeOrigin: true,
+        target: "http://127.0.0.1:8080",
+        ws: true
+      }
+    }
+  },
   ssr: {
     noExternal: [
       "@mt-kit/request-axios",

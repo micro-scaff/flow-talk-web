@@ -1,4 +1,5 @@
 import {
+  CloseOutlined,
   LogoutOutlined,
   MessageOutlined,
   MoonOutlined,
@@ -47,11 +48,15 @@ const {
 } = Typography;
 
 interface IConversationSidebarProps {
+  isMobileOpen: boolean;
   viewModel: IHomeWorkbenchViewModel;
+  onMobileClose: () => void;
 }
 
 function ConversationSidebar({
-  viewModel
+  isMobileOpen,
+  viewModel,
+  onMobileClose
 }: IConversationSidebarProps): ReactElement {
   const {
     actions,
@@ -79,7 +84,7 @@ function ConversationSidebar({
 
   return (
     <Sider
-      className="flow-sidebar border-r border-[#d9dee8] bg-white"
+      className={`flow-sidebar ${isMobileOpen ? "is-mobile-open" : ""} border-r border-[#d9dee8] bg-white`}
       theme="light"
       width={360}>
       <div className="flow-sidebar-shell">
@@ -107,6 +112,15 @@ function ConversationSidebar({
             </div>
 
             <Space size={6}>
+              <Tooltip title="关闭联系人栏">
+                <Button
+                  aria-label="关闭联系人栏"
+                  className="flow-icon-button flow-mobile-sidebar-close"
+                  icon={<CloseOutlined />}
+                  shape="circle"
+                  onClick={onMobileClose} />
+              </Tooltip>
+
               <Tooltip title={isDark ? "切换到白天模式" : "切换到黑夜模式"}>
                 <Button
                   aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}

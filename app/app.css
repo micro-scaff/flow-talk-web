@@ -420,6 +420,12 @@ a {
   box-shadow: 10px 0 28px rgba(23, 33, 43, 0.06);
 }
 
+.flow-mobile-menu-button.ant-btn,
+.flow-mobile-sidebar-close.ant-btn,
+.flow-mobile-sidebar-backdrop {
+  display: none;
+}
+
 .flow-sidebar-shell {
   display: flex;
   min-height: 0;
@@ -945,53 +951,74 @@ a {
     --flow-mobile-action-size: 38px;
     --flow-mobile-active-avatar-size: 34px;
     --flow-mobile-chat-padding: 14px 12px;
-    --flow-mobile-contact-avatar-size: 34px;
-    --flow-mobile-contact-card-height: 62px;
-    --flow-mobile-contact-card-width: 78px;
-    --flow-mobile-contact-list-gap: 8px;
-    --flow-mobile-contact-list-padding: 6px 10px 8px;
     --flow-mobile-message-max: min(78%, 560px);
-    --flow-mobile-sidebar-height: 176px;
     --flow-mobile-topbar-height: 56px;
     height: 100dvh;
     min-height: 0;
   }
 
   .flow-workbench-layout {
-    flex-direction: column;
     width: 100%;
   }
 
   .flow-workbench-content {
-    width: 100%;
+    width: 100% !important;
     min-height: 0;
     flex: 1 1 auto;
   }
 
   .flow-sidebar.ant-layout-sider {
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    height: var(--flow-mobile-sidebar-height);
-    flex: 0 0 var(--flow-mobile-sidebar-height) !important;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 30;
+    width: min(88vw, 360px) !important;
+    min-width: min(88vw, 360px) !important;
+    max-width: 360px !important;
+    height: 100dvh;
+    flex: none !important;
     border-right: 0;
-    border-bottom: 1px solid var(--flow-border-soft);
-    box-shadow: 0 8px 18px rgba(23, 33, 43, 0.07);
+    box-shadow: 18px 0 48px rgba(23, 33, 43, 0.2);
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+  }
+
+  .flow-sidebar.ant-layout-sider.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .flow-mobile-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: block;
+    visibility: hidden;
+    border: 0;
+    background: rgba(15, 23, 42, 0.42);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.22s ease,
+      visibility 0.22s ease;
+  }
+
+  .flow-mobile-sidebar-backdrop.is-visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .flow-sidebar-shell {
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    display: flex;
     overflow: hidden;
   }
 
   .flow-sidebar-header {
-    gap: 7px;
-    padding: 7px 10px 8px;
+    gap: 10px;
+    padding: max(10px, env(safe-area-inset-top)) 12px 12px;
   }
 
   .flow-brand-row {
-    height: 38px;
+    height: 44px;
   }
 
   .flow-brand-mark {
@@ -1001,84 +1028,9 @@ a {
     font-size: 12px;
   }
 
-  .flow-user-card {
-    display: none;
-  }
-
-  .flow-sidebar-status,
-  .flow-list-title {
-    display: none;
-  }
-
-  .flow-sidebar .ant-spin-nested-loading,
-  .flow-sidebar .ant-spin-container {
-    height: 100%;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .flow-sidebar .ant-list,
-  .flow-contact-list {
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .flow-contact-list .ant-list-items {
-    display: flex;
-    height: 100%;
-    gap: var(--flow-mobile-contact-list-gap);
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: var(--flow-mobile-contact-list-padding);
-    scrollbar-width: none;
-  }
-
-  .flow-contact-list .ant-list-items::-webkit-scrollbar {
-    display: none;
-  }
-
-  .flow-contact-row.ant-list-item {
-    width: var(--flow-mobile-contact-card-width);
-    min-height: 0;
-    height: var(--flow-mobile-contact-card-height);
-    flex: 0 0 var(--flow-mobile-contact-card-width);
-    justify-content: center;
-    margin: 0;
-    padding: 7px 6px;
-    border-left-width: 1px;
-    border-radius: 12px;
-  }
-
-  .flow-contact-row.ant-list-item.is-selected {
-    border-left-width: 1px;
-    box-shadow: inset 0 -3px 0 var(--flow-primary);
-  }
-
-  .flow-contact-row .ant-list-item-meta {
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    width: 100%;
-  }
-
-  .flow-contact-row .ant-list-item-meta-avatar {
-    margin-inline-end: 0 !important;
-  }
-
-  .flow-contact-row .ant-list-item-meta-content {
-    width: 100%;
-    text-align: center;
-  }
-
-  .flow-contact-row .ant-list-item-meta-description,
-  .flow-contact-row .ant-tag {
-    display: none;
-  }
-
-  .flow-contact-row .ant-avatar {
-    width: var(--flow-mobile-contact-avatar-size);
-    height: var(--flow-mobile-contact-avatar-size);
-    line-height: var(--flow-mobile-contact-avatar-size);
+  .flow-mobile-menu-button.ant-btn,
+  .flow-mobile-sidebar-close.ant-btn {
+    display: inline-flex;
   }
 
   .flow-topbar {
@@ -1092,6 +1044,7 @@ a {
 
   .flow-topbar-title {
     min-width: 0;
+    gap: 8px;
   }
 
   .flow-active-avatar.ant-avatar {
@@ -1155,6 +1108,13 @@ a {
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .flow-sidebar.ant-layout-sider,
+    .flow-mobile-sidebar-backdrop {
+      transition: none;
+    }
+  }
+
   .auth-hero {
     width: min(100% - 28px, 560px);
     padding: 18px 0;
@@ -1193,18 +1153,12 @@ a {
   .flow-workbench {
     --flow-mobile-action-size: 36px;
     --flow-mobile-chat-padding: 12px 10px;
-    --flow-mobile-contact-avatar-size: 32px;
-    --flow-mobile-contact-card-height: 58px;
-    --flow-mobile-contact-card-width: 70px;
-    --flow-mobile-contact-list-gap: 6px;
-    --flow-mobile-contact-list-padding: 6px 8px 8px;
     --flow-mobile-message-max: 80%;
-    --flow-mobile-sidebar-height: 166px;
     --flow-mobile-topbar-height: 52px;
   }
 
   .flow-sidebar-header {
-    padding: 6px 8px;
+    padding: max(8px, env(safe-area-inset-top)) 10px 10px;
   }
 
   .flow-brand-title.ant-typography {

@@ -1,5 +1,6 @@
 import {
   LaptopOutlined,
+  MenuOutlined,
   PlusOutlined,
   SearchOutlined,
   TeamOutlined
@@ -29,10 +30,12 @@ const {
 
 interface IWorkspaceHeaderProps {
   viewModel: IHomeWorkbenchViewModel;
+  onOpenMobileSidebar: () => void;
 }
 
 function WorkspaceHeader({
-  viewModel
+  viewModel,
+  onOpenMobileSidebar
 }: IWorkspaceHeaderProps): ReactElement {
   const {
     actions,
@@ -45,6 +48,13 @@ function WorkspaceHeader({
     <header className="flow-topbar">
       {/* 左侧展示当前会话上下文，未选中会话时使用默认标题兜底。 */}
       <div className="flow-topbar-title flex min-w-0 items-center gap-3">
+        <Button
+          aria-label="打开联系人栏"
+          className="flow-icon-button flow-mobile-menu-button"
+          icon={<MenuOutlined />}
+          shape="circle"
+          onClick={onOpenMobileSidebar} />
+
         <Avatar
           className="flow-active-avatar shrink-0 bg-[#e7f3ff] text-[#1877f2]"
           size={40}
