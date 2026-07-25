@@ -174,7 +174,11 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
       };
     };
 
-    connect();
+    // 延迟到当前任务结束后再建立连接，避免 React 开发模式的 effect 预演立即关闭 CONNECTING socket。
+    reconnectTimerRef.current = window.setTimeout(() => {
+      reconnectTimerRef.current = null;
+      connect();
+    }, 0);
 
     return () => {
       shouldReconnectRef.current = false;

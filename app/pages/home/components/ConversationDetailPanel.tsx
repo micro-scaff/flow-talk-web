@@ -41,7 +41,7 @@ function ConversationDetailPanel({
     <aside className="hidden border-l border-[#dadde1] bg-white p-5 xl:block">
       <Space
         className="w-full"
-        direction="vertical"
+        orientation="vertical"
         size={16}>
         <Card
           className="!rounded-lg"
@@ -50,11 +50,11 @@ function ConversationDetailPanel({
           {state.activeConversation ? (
             <Space
               className="w-full"
-              direction="vertical">
+              orientation="vertical">
               <Avatar
                 className="bg-[#1877f2]"
                 size={56}
-                src={state.activeConversation.avatar_url}>
+                src={state.activeConversation.avatar_url || undefined}>
                 {state.activeTitle.slice(0, 1)}
               </Avatar>
 
@@ -75,7 +75,7 @@ function ConversationDetailPanel({
               {state.activeConversation.type === "group" && (
                 <Space
                   className="w-full"
-                  direction="vertical">
+                  orientation="vertical">
                   <Button
                     block
                     onClick={actions.handleOpenGroupProfile}>
@@ -104,7 +104,7 @@ function ConversationDetailPanel({
           title="成员">
           <Space
             className="w-full"
-            direction="vertical">
+            orientation="vertical">
             {state.activeConversation?.members?.map(member => {
               const user = state.users.find(item => {
                 return item.id === member.user_id;

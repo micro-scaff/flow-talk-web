@@ -57,3 +57,5 @@ export {
   clientLoader,
   meta
 };
+
+export { RouteHydrateFallback as HydrateFallback } from "~/components/RouteHydrateFallback";

@@ -1,19 +1,24 @@
 import {
   CheckCircleOutlined,
   DeleteOutlined,
-  LaptopOutlined
+  LaptopOutlined,
+  UploadOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
   Button,
+  Checkbox,
   Drawer,
   Empty,
   Form,
   Input,
-  List,
   Modal,
   Select,
-  Space
+  Space,
+  Upload
+} from "antd";
+import type {
+  UploadProps
 } from "antd";
 import type {
   ReactElement
@@ -41,9 +46,26 @@ function WorkspaceDialogs({
     userOptions
   } = viewModel;
 
+  const groupAvatarUrl = Form.useWatch("avatarUrl", forms.groupForm);
+
+  const profileAvatarUrl = Form.useWatch("avatarUrl", forms.profileForm);
+
+  function getAvatarUploadProps(target: "create" | "profile"): UploadProps {
+    return {
+      accept: "image/*",
+      beforeUpload(file) {
+        void actions.handleUploadGroupAvatar(file, target);
+
+        return Upload.LIST_IGNORE;
+      },
+      maxCount: 1,
+      showUploadList: false
+    };
+  }
+
   return (
     <>
-      {/* 兼容旧的单聊选择弹窗；当前主入口优先使用侧栏选择 + 顶部创建按钮。 */}
+      {/* 兼容旧的单聊选择弹窗；当前单聊主入口为联系人列表。 */}
       <Modal
         okText="创建"
         open={dialogs.directModalOpen}
@@ -91,18 +113,42 @@ function WorkspaceDialogs({
           </Form.Item>
 
           <Form.Item
-            label="群头像 URL"
+            hidden
             name="avatarUrl">
-            <Input placeholder="可选" />
+            <Input />
+          </Form.Item>
+
+          <Form.Item label="群头像">
+            <Space align="center">
+              <Avatar
+                shape="square"
+                size={64}
+                src={groupAvatarUrl || undefined}>
+                群
+              </Avatar>
+
+              <Upload {...getAvatarUploadProps("create")}>
+                <Button
+                  icon={<UploadOutlined />}
+                  loading={state.groupAvatarUploading}>
+                  {groupAvatarUrl ? "重新上传" : "上传头像"}
+                </Button>
+              </Upload>
+            </Space>
           </Form.Item>
 
           <Form.Item
             label="成员"
-            name="memberIds">
-            <Select
-              mode="multiple"
-              options={userOptions}
-              placeholder="选择群成员" />
+            name="memberIds"
+            rules={[
+              {
+                message: "请至少选择一位群成员",
+                required: true
+              }
+            ]}>
+            <Checkbox.Group
+              className="flow-group-member-checkboxes"
+              options={userOptions} />
           </Form.Item>
         </Form>
       </Modal>
@@ -163,24 +209,43 @@ function WorkspaceDialogs({
           </Form.Item>
 
           <Form.Item
-            label="群头像 URL"
+            hidden
             name="avatarUrl">
             <Input />
+          </Form.Item>
+
+          <Form.Item label="群头像">
+            <Space align="center">
+              <Avatar
+                shape="square"
+                size={64}
+                src={profileAvatarUrl || undefined}>
+                群
+              </Avatar>
+
+              <Upload {...getAvatarUploadProps("profile")}>
+                <Button
+                  icon={<UploadOutlined />}
+                  loading={state.groupAvatarUploading}>
+                  {profileAvatarUrl ? "重新上传" : "上传头像"}
+                </Button>
+              </Upload>
+            </Space>
           </Form.Item>
         </Form>
       </Modal>
 
       <Drawer
         open={dialogs.devicesOpen}
+        size={420}
         title="设备与离线同步"
-        width={420}
         onClose={() => {
           return actions.setDevicesOpen(false);
         }}>
         {/* 设备上报用于 WebSocket device_id 和离线同步排查，不参与消息展示主流程。 */}
         <Space
           className="w-full"
-          direction="vertical">
+          orientation="vertical">
           <Button
             icon={<CheckCircleOutlined />}
             type="primary"
@@ -190,12 +255,8 @@ function WorkspaceDialogs({
             上报当前设备
           </Button>
 
-          <List
-            dataSource={state.devices}
-            locale={{
-              emptyText: <Empty description="暂无设备" />
-            }}
-            renderItem={device => {
+          <div className="grid w-full gap-2">
+            {state.devices.map(device => {
               const deviceData = device.data;
 
               const deviceId = typeof deviceData.device_id === "string" ? deviceData.device_id : String(device.id);
@@ -205,24 +266,37 @@ function WorkspaceDialogs({
               const updatedAt = device.updated_at;
 
               return (
-                <List.Item
-                  actions={[
-                    <Button
-                      danger
-                      icon={<DeleteOutlined />}
-                      key="delete"
-                      type="text"
-                      onClick={() => {
-                        return void actions.handleDeleteDevice();
-                      }} />
-                  ]}>
-                  <List.Item.Meta
-                    avatar={<Avatar icon={<LaptopOutlined />} />}
-                    description={updatedAt ? `最后活跃：${formatDateTime(updatedAt)}` : "等待同步"}
-                    title={deviceId === state.deviceId ? `${platform}（当前）` : platform} />
-                </List.Item>
+                <div
+                  key={device.id}
+                  className="flex items-center gap-3 rounded-lg border border-[#e1e5ec] p-3">
+                  <Avatar icon={<LaptopOutlined />} />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="font-bold">
+                      {deviceId === state.deviceId ? `${platform}（当前）` : platform}
+                    </div>
+
+                    <div className="flow-muted-text mt-1 text-xs">
+                      {updatedAt ? `最后活跃：${formatDateTime(updatedAt)}` : "等待同步"}
+                    </div>
+                  </div>
+
+                  <Button
+                    danger
+                    aria-label={`删除 ${platform} 设备`}
+                    icon={<DeleteOutlined />}
+                    type="text"
+                    onClick={() => {
+                      return void actions.handleDeleteDevice();
+                    }} />
+                </div>
               );
-            }} />
+            })}
+
+            {state.devices.length === 0 && (
+              <Empty description="暂无设备" />
+            )}
+          </div>
         </Space>
       </Drawer>
 

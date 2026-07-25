@@ -13,7 +13,6 @@ import {
   Button,
   Input,
   Layout,
-  List,
   Space,
   Spin,
   Tag,
@@ -88,6 +87,10 @@ function ConversationSidebar({
   }).length;
 
   const currentUserName = getUserName(state.currentUser);
+
+  const activeDirectUserId = state.activeConversation?.type === "direct" ? state.activeConversation.members?.find(member => {
+    return member.status === "active" && member.user_id !== state.currentUser?.id;
+  })?.user_id : undefined;
 
   function getContactStatus(userId: number): string {
     return state.presences[userId]?.online ? "在线" : "离线";
@@ -172,7 +175,7 @@ function ConversationSidebar({
             <Avatar
               className="flow-user-avatar"
               size={42}
-              src={state.currentUser?.avatar_url}>
+              src={state.currentUser?.avatar_url || undefined}>
               {currentUserName.slice(0, 1)}
             </Avatar>
 
@@ -222,74 +225,51 @@ function ConversationSidebar({
           <Tag
             className="m-0 rounded-full px-2 font-bold"
             color="blue">
-            {state.selectedGroupUserIds.length}
+            {visibleContacts.length}
           </Tag>
         </div>
 
         <Spin
           className="min-h-0 flex-1"
           spinning={state.loading}>
-          <List
-            className="flow-contact-list"
-            dataSource={visibleContacts}
-            locale={{
-              emptyText: (
-                <div className="flow-contact-empty">
-                  <div className="flow-empty-avatar">
-                    <MessageOutlined />
-                  </div>
+          {visibleContacts.length > 0 ? (
+            <div className="flow-contact-list">
+              {visibleContacts.map(user => {
+                const userId = user.id as number;
 
-                  <Text className="text-sm font-bold">
-                    {keyword.trim() ? "未找到匹配用户" : "暂无其他用户"}
-                  </Text>
+                const isOnline = Boolean(state.presences[userId]?.online);
 
-                  <Text className="flow-muted-text mt-1 text-xs">
-                    {keyword.trim() ? "请尝试其他关键词" : "等待新用户加入"}
-                  </Text>
-                </div>
-              )
-            }}
-            renderItem={user => {
-              const userId = user.id as number;
+                const active = activeDirectUserId === userId;
 
-              const isOnline = Boolean(state.presences[userId]?.online);
+                return (
 
-              const selected = state.selectedGroupUserIds.includes(userId);
+                // 点击联系人直接打开单聊；当前单聊联系人保持高亮。
+                  <button
+                    aria-current={active ? "true" : undefined}
+                    className={`flow-contact-row ${active ? "is-active" : ""}`}
+                    key={userId}
+                    type="button"
+                    onClick={() => {
+                      void actions.handleCreateDirectWithUser(userId);
+                      onMobileClose();
+                    }}>
+                    <Badge
+                      color={isOnline ? "#31a24c" : "#a8b0ba"}
+                      dot
+                      offset={[
+                        -4,
+                        36
+                      ]}>
+                      <Avatar
+                        className="bg-[#e7f3ff] font-bold text-[#1877f2]"
+                        size={42}
+                        src={user.avatar_url || undefined}>
+                        {getUserName(user).slice(0, 1)}
+                      </Avatar>
+                    </Badge>
 
-              return (
-
-                // 点击整行只负责选择/取消选择；真正创建对话统一交给右上角按钮。
-                <List.Item
-                  className={`flow-contact-row ${selected ? "is-selected" : ""}`}
-                  onClick={() => {
-                    actions.toggleSelectedGroupUser(userId);
-                  }}>
-                  <List.Item.Meta
-                    avatar={(
-                      <Badge
-                        color={isOnline ? "#31a24c" : "#a8b0ba"}
-                        dot
-                        offset={[
-                          -4,
-                          36
-                        ]}>
-                        <Avatar
-                          className="bg-[#e7f3ff] font-bold text-[#1877f2]"
-                          size={42}
-                          src={user.avatar_url}>
-                          {getUserName(user).slice(0, 1)}
-                        </Avatar>
-                      </Badge>
-                    )}
-                    description={(
-                      <Text
-                        className="flow-muted-text"
-                        ellipsis>
-                        {getContactDescription(userId, user.username)}
-                      </Text>
-                    )}
-                    title={(
-                      <div className="flex items-center justify-between gap-3">
+                    <span className="flow-contact-copy">
+                      <span className="flow-contact-heading">
                         <Text
                           className="min-w-0"
                           strong
@@ -297,18 +277,40 @@ function ConversationSidebar({
                           {getUserName(user)}
                         </Text>
 
-                        {selected && (
+                        {active && (
                           <Tag
                             className="m-0 rounded-full px-2 font-bold"
                             color="blue">
-                            已选
+                            聊天中
                           </Tag>
                         )}
-                      </div>
-                    )} />
-                </List.Item>
-              );
-            }} />
+                      </span>
+
+                      <Text
+                        className="flow-muted-text"
+                        ellipsis>
+                        {getContactDescription(userId, user.username)}
+                      </Text>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flow-contact-empty">
+              <div className="flow-empty-avatar">
+                <MessageOutlined />
+              </div>
+
+              <Text className="text-sm font-bold">
+                {keyword.trim() ? "未找到匹配用户" : "暂无其他用户"}
+              </Text>
+
+              <Text className="flow-muted-text mt-1 text-xs">
+                {keyword.trim() ? "请尝试其他关键词" : "等待新用户加入"}
+              </Text>
+            </div>
+          )}
         </Spin>
       </div>
     </Sider>

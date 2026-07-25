@@ -1,9 +1,6 @@
 import {
-  CheckCircleOutlined,
-  MessageOutlined,
   PaperClipOutlined,
-  SendOutlined,
-  TeamOutlined
+  SendOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -49,8 +46,6 @@ function MessagePanel({
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
-  const selectedCount = state.selectedGroupUserIds.length;
-
   return (
     <div className="flow-chat-panel flex h-full min-w-0 flex-col bg-[#f5f7fb]">
       {/* 搜索结果只展示轻量预览，点击会话或清空后回到正常消息流。 */}
@@ -58,7 +53,7 @@ function MessagePanel({
         <div className="flow-search-results border-b border-[#eadfb8] bg-[#fff8df] px-6 py-3">
           <Space
             className="w-full"
-            direction="vertical">
+            orientation="vertical">
             <div className="flex items-center justify-between">
               <Text strong>
                 搜索结果
@@ -91,14 +86,14 @@ function MessagePanel({
         </div>
       )}
 
-      <div className="flow-chat-scroll">
+      <div className={`flow-chat-scroll ${hasActiveConversation ? "" : "is-welcome"}`}>
         <Spin spinning={state.messageLoading}>
           {hasActiveConversation ? (
 
             // 消息区按左右对齐区分自己和他人；消息去重/排序在 hook 与 utils 中完成。
             <Space
               className="flow-message-stack"
-              direction="vertical"
+              orientation="vertical"
               size={14}>
               {state.messages.length === 0 && (
                 <div className="flow-chat-empty">
@@ -133,7 +128,7 @@ function MessagePanel({
                   <Avatar
                     className="shrink-0 bg-[#e7f3ff] font-bold text-[#1877f2]"
                     size={32}
-                    src={messageUser?.avatar_url}>
+                    src={messageUser?.avatar_url || undefined}>
                     {messageName.slice(0, 1)}
                   </Avatar>
                 );
@@ -167,41 +162,179 @@ function MessagePanel({
             </Space>
           ) : (
             <div className="flow-default-screen">
+              <div
+                aria-hidden="true"
+                className="flow-welcome-canvas">
+                <svg
+                  className="flow-welcome-paths"
+                  preserveAspectRatio="none"
+                  viewBox="0 0 800 460">
+                  <path d="M92 118 C230 118 244 216 400 230" />
+                  <path d="M708 104 C570 104 556 198 400 230" />
+                  <path d="M96 356 C244 356 264 258 400 230" />
+                  <path d="M704 350 C562 350 548 264 400 230" />
+
+                  <circle
+                    className="flow-welcome-particle"
+                    r="4">
+                    <animateMotion
+                      dur="4.6s"
+                      path="M92 118 C230 118 244 216 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle is-soft"
+                    r="3">
+                    <animateMotion
+                      begin="-2.3s"
+                      dur="4.6s"
+                      path="M92 118 C230 118 244 216 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle is-green"
+                    r="4">
+                    <animateMotion
+                      begin="-1.2s"
+                      dur="4.6s"
+                      path="M708 104 C570 104 556 198 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle is-green is-soft"
+                    r="3">
+                    <animateMotion
+                      begin="-3.5s"
+                      dur="4.6s"
+                      path="M708 104 C570 104 556 198 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle"
+                    r="4">
+                    <animateMotion
+                      begin="-2.35s"
+                      dur="4.6s"
+                      path="M96 356 C244 356 264 258 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle is-soft"
+                    r="3">
+                    <animateMotion
+                      begin="-4.65s"
+                      dur="4.6s"
+                      path="M96 356 C244 356 264 258 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle is-green"
+                    r="4">
+                    <animateMotion
+                      begin="-3.5s"
+                      dur="4.6s"
+                      path="M704 350 C562 350 548 264 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+
+                  <circle
+                    className="flow-welcome-particle is-green is-soft"
+                    r="3">
+                    <animateMotion
+                      begin="-5.8s"
+                      dur="4.6s"
+                      path="M704 350 C562 350 548 264 400 230"
+                      repeatCount="indefinite" />
+                  </circle>
+                </svg>
+
+                <div className="flow-welcome-sparks">
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                  <i />
+                </div>
+
+                <div className="flow-welcome-message is-left is-upper">
+                  <span className="flow-welcome-avatar">A</span>
+
+                  <span className="flow-welcome-lines">
+                    <i />
+                    <i />
+                  </span>
+
+                  <span className="flow-welcome-delivered">✓</span>
+                </div>
+
+                <div className="flow-welcome-message is-right is-upper">
+                  <span className="flow-welcome-avatar is-green">L</span>
+
+                  <span className="flow-welcome-lines">
+                    <i />
+                    <i />
+                  </span>
+
+                  <span className="flow-welcome-delivered">✓</span>
+                </div>
+
+                <div className="flow-welcome-message is-left is-lower">
+                  <span className="flow-welcome-avatar is-violet">M</span>
+
+                  <span className="flow-welcome-lines">
+                    <i />
+                    <i />
+                  </span>
+
+                  <span className="flow-welcome-delivered">✓</span>
+                </div>
+
+                <div className="flow-welcome-message is-right is-lower">
+                  <span className="flow-welcome-avatar is-orange">K</span>
+
+                  <span className="flow-welcome-lines">
+                    <i />
+                    <i />
+                  </span>
+
+                  <span className="flow-welcome-delivered">✓</span>
+                </div>
+              </div>
+
               <div className="flow-default-hero">
+                <div
+                  aria-hidden="true"
+                  className="flow-welcome-aura">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+
+                <div
+                  aria-hidden="true"
+                  className="flow-welcome-orbit">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+
                 <div className="flow-default-mark">
-                  FT
+                  <span>FT</span>
+                  <i className="flow-welcome-online" />
                 </div>
 
                 <Text className="flow-default-title">
-                  Flow Talk
+                  欢迎使用 Flow Talk
                 </Text>
-
-                <Text className="flow-default-copy">
-                  从联系人栏选择人员，再点击右上角创建对话；选择 1 人开始单聊，选择多人创建群聊。
-                </Text>
-
-                <div className="flow-default-actions">
-                  <div className="flow-default-pill">
-                    <MessageOutlined />
-                    <span>选择联系人</span>
-                  </div>
-
-                  <div className="flow-default-pill">
-                    <TeamOutlined />
-
-                    <span>
-                      {selectedCount > 0 ? `已选 ${selectedCount} 人` : "未选择人员"}
-                    </span>
-                  </div>
-
-                  <div className="flow-default-pill">
-                    <CheckCircleOutlined />
-
-                    <span>
-                      {`${state.onlineCount} 位在线`}
-                    </span>
-                  </div>
-                </div>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 import {
-  Form,
-  message
+  App,
+  Form
 } from "antd";
 import {
   useCallback,
@@ -33,6 +33,7 @@ import {
   dataSendMessage,
   dataUpdateGroupProfile,
   dataUpdateMemberRole,
+  dataUploadResource,
   dataUpsertDevice
 } from "~/api";
 import type {
@@ -94,6 +95,10 @@ interface IPendingMessage {
 }
 
 function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
+  const {
+    message
+  } = App.useApp();
+
   const params = useParams();
 
   const navigate = useNavigate();
@@ -202,6 +207,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState(false);
 
   const [
+    groupAvatarUploading,
+    setGroupAvatarUploading
+  ] = useState(false);
+
+  const [
     directModalOpen,
     setDirectModalOpen
   ] = useState(false);
@@ -230,11 +240,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     selectedDirectUserId,
     setSelectedDirectUserId
   ] = useState<number | null>(null);
-
-  const [
-    selectedGroupUserIds,
-    setSelectedGroupUserIds
-  ] = useState<number[]>([]);
 
   const [
     groupForm
@@ -440,6 +445,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     currentUser?.id,
     deviceId,
     loadDevices,
+    message,
     reportError
   ]);
 
@@ -583,6 +589,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     activeConversationId,
     loadActiveConversation,
     loadInitialData,
+    message,
     reportError
   ]);
 
@@ -608,6 +615,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     handleSelectConversation,
     loadConversations,
+    message,
     reportError,
     selectedDirectUserId
   ]);
@@ -618,7 +626,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         target_user_id: userId
       });
 
-      setSelectedGroupUserIds([]);
       await loadConversations();
       handleSelectConversation(conversation.id);
     } catch (error) {
@@ -630,45 +637,15 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     reportError
   ]);
 
-  const toggleSelectedGroupUser = useCallback((userId: number): void => {
-    setSelectedGroupUserIds(currentUserIds => {
-      if (currentUserIds.includes(userId)) {
-        return currentUserIds.filter(currentUserId => {
-          return currentUserId !== userId;
-        });
-      }
-
-      return [
-        ...currentUserIds,
-        userId
-      ];
-    });
-  }, []);
-
-  const handleOpenGroupFromSelection = useCallback((): void => {
-    if (selectedGroupUserIds.length === 0) {
-      message.warning("请先选择在线成员");
-
-      return;
-    }
-
-    if (selectedGroupUserIds.length === 1) {
-
-      // 选中 1 人时右上角统一入口创建单聊；多人时才进入群聊弹窗。
-      void handleCreateDirectWithUser(selectedGroupUserIds[0] as number);
-
-      return;
-    }
-
+  const handleOpenGroupCreate = useCallback((): void => {
     groupForm.setFieldsValue({
-      memberIds: selectedGroupUserIds,
+      avatarUrl: "",
+      memberIds: [],
       title: ""
     });
     setGroupModalOpen(true);
   }, [
-    groupForm,
-    handleCreateDirectWithUser,
-    selectedGroupUserIds
+    groupForm
   ]);
 
   const handleCreateGroup = useCallback(async (): Promise<void> => {
@@ -682,7 +659,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       });
 
       groupForm.resetFields();
-      setSelectedGroupUserIds([]);
       setGroupModalOpen(false);
       await loadConversations();
       handleSelectConversation(conversation.id);
@@ -693,6 +669,37 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     groupForm,
     handleSelectConversation,
     loadConversations,
+    reportError
+  ]);
+
+  const handleUploadGroupAvatar = useCallback(async (file: File, target: "create" | "profile"): Promise<void> => {
+    if (!file.type.startsWith("image/")) {
+      message.warning("请选择图片文件");
+
+      return;
+    }
+
+    setGroupAvatarUploading(true);
+
+    try {
+      const resource = await dataUploadResource({
+        file,
+        type: "image"
+      });
+
+      const targetForm = target === "create" ? groupForm : profileForm;
+
+      targetForm.setFieldValue("avatarUrl", resource.url);
+      message.success("群头像上传成功");
+    } catch (error) {
+      reportError(error, "群头像上传失败");
+    } finally {
+      setGroupAvatarUploading(false);
+    }
+  }, [
+    groupForm,
+    message,
+    profileForm,
     reportError
   ]);
 
@@ -722,6 +729,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     activeConversationId,
     addMemberForm,
     loadActiveConversation,
+    message,
     reportError
   ]);
 
@@ -763,6 +771,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     activeConversationId,
     loadConversations,
+    message,
     profileForm,
     reportError
   ]);
@@ -788,6 +797,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     activeConversationId,
     loadActiveConversation,
+    message,
     reportError
   ]);
 
@@ -813,6 +823,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     activeConversationId,
     loadActiveConversation,
+    message,
     reportError
   ]);
 
@@ -838,6 +849,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     activeConversationId,
     loadConversations,
+    message,
     navigate,
     reportError
   ]);
@@ -1124,6 +1136,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     devices,
     draftText,
     errorNotice,
+    groupAvatarUploading,
     loading,
     messageLoading,
     messages,
@@ -1132,7 +1145,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     searchResults,
     searchText,
     selectedDirectUserId,
-    selectedGroupUserIds,
     sending,
     users,
     wsStatus
@@ -1162,7 +1174,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleCreateGroup,
     handleDeleteDevice,
     handleLeaveGroup,
-    handleOpenGroupFromSelection,
+    handleOpenGroupCreate,
     handleLogout,
     handleOpenGroupProfile,
     handleRefresh,
@@ -1172,6 +1184,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleSendMessage,
     handleUpdateGroupProfile,
     handleUpdateMemberRole,
+    handleUploadGroupAvatar,
     handleUpsertDevice,
     setDevicesOpen,
     setDirectModalOpen,
@@ -1181,9 +1194,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setProfileModalOpen,
     setSearchResults,
     setSearchText,
-    setSelectedDirectUserId,
-    setSelectedGroupUserIds,
-    toggleSelectedGroupUser
+    setSelectedDirectUserId
   };
 
   return {

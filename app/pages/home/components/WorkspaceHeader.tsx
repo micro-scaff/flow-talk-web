@@ -7,7 +7,6 @@ import {
 } from "@ant-design/icons";
 import {
   Avatar,
-  Badge,
   Button,
   Input,
   Space,
@@ -42,12 +41,10 @@ function WorkspaceHeader({
     state
   } = viewModel;
 
-  const selectedCount = state.selectedGroupUserIds.length;
-
   const hasActiveConversation = Boolean(state.activeConversationId);
 
   return (
-    <header className="flow-topbar">
+    <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"}`}>
       {/* 只有用户明确选择会话后才展示会话信息，首页保持未打开状态。 */}
       <div className="flow-topbar-title flex min-w-0 items-center gap-3">
         <Button
@@ -57,12 +54,12 @@ function WorkspaceHeader({
           shape="circle"
           onClick={onOpenMobileSidebar} />
 
-        {hasActiveConversation ? (
+        {hasActiveConversation && (
           <>
             <Avatar
               className="flow-active-avatar shrink-0 bg-[#e7f3ff] text-[#1877f2]"
               size={40}
-              src={state.activeConversation?.avatar_url}>
+              src={state.activeConversation?.avatar_url || undefined}>
               {state.activeTitle.slice(0, 1)}
             </Avatar>
 
@@ -90,42 +87,18 @@ function WorkspaceHeader({
               </Text>
             </div>
           </>
-        ) : (
-          <div className="min-w-0">
-            <Title
-              className="!mb-0 !text-lg !font-black"
-              level={2}>
-              尚未选择会话
-            </Title>
-
-            <Text className="mt-1 block text-[#65676b]">
-              从左侧选择联系人后创建对话
-            </Text>
-          </div>
         )}
       </div>
 
       <Space className="flow-topbar-actions">
-        {/* 统一创建入口：左侧选 1 人创建单聊，选多人创建群聊。 */}
-        <Tooltip title={selectedCount > 0 ? `基于已选 ${selectedCount} 人创建对话` : "先在联系人栏选择人员"}>
-          <Badge
-            className="flow-create-badge"
-            count={selectedCount}
-            offset={[
-              -2,
-              3
-            ]}
-            size="small">
-            <Button
-              className="flow-topbar-action"
-              disabled={selectedCount === 0}
-              icon={<TeamOutlined />}
-              type="primary"
-              onClick={actions.handleOpenGroupFromSelection}>
-              创建对话
-              {selectedCount > 0 ? ` ${selectedCount}` : ""}
-            </Button>
-          </Badge>
+        <Tooltip title="创建群聊并选择成员">
+          <Button
+            className="flow-topbar-action"
+            icon={<TeamOutlined />}
+            type="primary"
+            onClick={actions.handleOpenGroupCreate}>
+            创建群聊
+          </Button>
         </Tooltip>
 
         {hasActiveConversation && (

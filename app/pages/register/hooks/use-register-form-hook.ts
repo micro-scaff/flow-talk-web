@@ -1,6 +1,6 @@
 import {
-  Form,
-  message
+  App,
+  Form
 } from "antd";
 import type {
   FormInstance
@@ -37,6 +37,10 @@ interface IRegisterFormHook {
 }
 
 export function useRegisterFormHook(): IRegisterFormHook {
+  const {
+    message
+  } = App.useApp();
+
   const [
     form
   ] = Form.useForm<IParamsRegister>();

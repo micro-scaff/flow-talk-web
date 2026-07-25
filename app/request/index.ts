@@ -1,7 +1,3 @@
-import {
-  message
-} from "antd";
-
 import RequestClient, {
   authenticateResponseInterceptor,
   defaultResponseInterceptor,
@@ -11,6 +7,10 @@ import RequestClient, {
 import type {
   RequestClientOptions
 } from "@mt-kit/request-axios";
+
+import {
+  getAppMessage
+} from "~/utils/app-message";
 
 // token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
@@ -150,7 +150,7 @@ function createRequestClient(options?: RequestClientOptions): RequestClient {
   client.addResponseInterceptor(errorMessageResponseInterceptor({
     client,
     errorFn(errorMessage, error) {
-      message.error(pickResponseErrorMessage(errorMessage, error));
+      getAppMessage()?.error(pickResponseErrorMessage(errorMessage, error));
     }
   }));
 

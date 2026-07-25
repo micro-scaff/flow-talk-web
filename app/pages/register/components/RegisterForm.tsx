@@ -109,7 +109,7 @@ export function RegisterForm({
           <Space align="center">
             <Avatar
               size={56}
-              src={avatarBase64}>
+              src={avatarBase64 || undefined}>
               {nickname?.slice(0, 1) || username?.slice(0, 1) || "FT"}
             </Avatar>
 

@@ -1,6 +1,6 @@
 import {
-  Form,
-  message
+  App,
+  Form
 } from "antd";
 import type {
   FormInstance
@@ -36,6 +36,10 @@ interface ILoginFormHook {
 }
 
 export function useLoginFormHook(): ILoginFormHook {
+  const {
+    message
+  } = App.useApp();
+
   const [
     form
   ] = Form.useForm<IParamsLogin>();

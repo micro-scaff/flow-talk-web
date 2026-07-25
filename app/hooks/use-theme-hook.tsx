@@ -1,4 +1,5 @@
 import {
+  App,
   ConfigProvider,
   theme
 } from "antd";
@@ -17,6 +18,9 @@ import type {
 import type {
   TThemeMode
 } from "~/model/theme.model";
+import {
+  setAppMessage
+} from "~/utils/app-message";
 
 const THEME_STORAGE_KEY = "flow-talk-theme";
 
@@ -29,6 +33,24 @@ interface IThemeViewModel {
 }
 
 const ThemeViewModelContext = createContext<IThemeViewModel | null>(null);
+
+function AppMessageBridge(): null {
+  const {
+    message
+  } = App.useApp();
+
+  useEffect(() => {
+    setAppMessage(message);
+
+    return () => {
+      setAppMessage(null);
+    };
+  }, [
+    message
+  ]);
+
+  return null;
+}
 
 function getInitialTheme(): TThemeMode {
   if (typeof window === "undefined") {
@@ -128,7 +150,10 @@ export function ThemeProvider({
   return (
     <ThemeViewModelContext value={contextValue}>
       <ConfigProvider theme={antdTheme}>
-        {children}
+        <App>
+          <AppMessageBridge />
+          {children}
+        </App>
       </ConfigProvider>
     </ThemeViewModelContext>
   );

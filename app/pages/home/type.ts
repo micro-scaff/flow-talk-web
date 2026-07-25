@@ -45,6 +45,7 @@ export interface IHomeWorkbenchState {
   devices: IDataDevice[];
   draftText: string;
   errorNotice: string;
+  groupAvatarUploading: boolean;
   loading: boolean;
   messageLoading: boolean;
   messages: IDataMessage[];
@@ -53,7 +54,6 @@ export interface IHomeWorkbenchState {
   searchResults: IDataMessage[];
   searchText: string;
   selectedDirectUserId: number | null;
-  selectedGroupUserIds: number[];
   sending: boolean;
   users: IDataListUsers;
   wsStatus: TWebSocketStatus;
@@ -81,7 +81,7 @@ export interface IHomeWorkbenchActions {
   handleCreateGroup: () => Promise<void>;
   handleDeleteDevice: () => Promise<void>;
   handleLeaveGroup: () => Promise<void>;
-  handleOpenGroupFromSelection: () => void;
+  handleOpenGroupCreate: () => void;
   handleLogout: () => void;
   handleOpenGroupProfile: () => void;
   handleRefresh: () => Promise<void>;
@@ -91,6 +91,7 @@ export interface IHomeWorkbenchActions {
   handleSendMessage: () => Promise<void>;
   handleUpdateGroupProfile: () => Promise<void>;
   handleUpdateMemberRole: (userId: number, role: string) => Promise<void>;
+  handleUploadGroupAvatar: (file: File, target: "create" | "profile") => Promise<void>;
   handleUpsertDevice: () => Promise<void>;
   setDevicesOpen: (open: boolean) => void;
   setDirectModalOpen: (open: boolean) => void;
@@ -101,8 +102,6 @@ export interface IHomeWorkbenchActions {
   setSearchResults: (messages: IDataMessage[]) => void;
   setSearchText: (value: string) => void;
   setSelectedDirectUserId: (userId: number | null) => void;
-  setSelectedGroupUserIds: (userIds: number[]) => void;
-  toggleSelectedGroupUser: (userId: number) => void;
 }
 
 export interface IHomeWorkbenchViewModel {
