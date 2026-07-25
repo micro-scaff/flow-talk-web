@@ -73,14 +73,32 @@ function ConversationSidebar({
     setKeyword
   ] = useState("");
 
-  // 侧栏只展示在线联系人；离线用户暂不参与发起会话和群聊选择。
-  const onlineUsers = state.users.filter(user => {
-    const matchesKeyword = !keyword.trim() || getUserName(user).toLowerCase().includes(keyword.trim().toLowerCase()) || user.username?.toLowerCase().includes(keyword.trim().toLowerCase());
-
-    return Boolean(user.id) && user.id !== state.currentUser?.id && state.presences[user.id as number]?.online && matchesKeyword;
+  const contacts = state.users.filter(user => {
+    return Boolean(user.id) && user.id !== state.currentUser?.id;
   });
 
+  const visibleContacts = contacts.filter(user => {
+    const matchesKeyword = !keyword.trim() || getUserName(user).toLowerCase().includes(keyword.trim().toLowerCase()) || user.username?.toLowerCase().includes(keyword.trim().toLowerCase());
+
+    return matchesKeyword;
+  });
+
+  const onlineContactCount = contacts.filter(user => {
+    return state.presences[user.id as number]?.online;
+  }).length;
+
   const currentUserName = getUserName(state.currentUser);
+
+  function getContactStatus(userId: number): string {
+    return state.presences[userId]?.online ? "在线" : "离线";
+  }
+
+  function getContactDescription(userId: number, username?: string): string {
+    return [
+      username ? `@${username}` : "",
+      getContactStatus(userId)
+    ].filter(Boolean).join(" · ");
+  }
 
   return (
     <Sider
@@ -178,7 +196,7 @@ function ConversationSidebar({
               <span className="flow-status-dot" />
 
               <span>
-                {`${onlineUsers.length} 人在线`}
+                {`${contacts.length} 位联系人 · ${onlineContactCount} 人在线`}
               </span>
             </div>
           </div>
@@ -187,7 +205,7 @@ function ConversationSidebar({
             allowClear
             className="flow-search-input"
             prefix={<SearchOutlined />}
-            placeholder="搜索在线人员"
+            placeholder="搜索全部用户"
             value={keyword}
             onChange={event => {
               setKeyword(event.target.value);
@@ -197,7 +215,7 @@ function ConversationSidebar({
         <div className="flow-list-title">
           <div>
             <Text className="text-base font-black">
-              在线人员名单
+              全部用户
             </Text>
           </div>
 
@@ -213,7 +231,7 @@ function ConversationSidebar({
           spinning={state.loading}>
           <List
             className="flow-contact-list"
-            dataSource={onlineUsers}
+            dataSource={visibleContacts}
             locale={{
               emptyText: (
                 <div className="flow-contact-empty">
@@ -222,17 +240,19 @@ function ConversationSidebar({
                   </div>
 
                   <Text className="text-sm font-bold">
-                    暂无在线联系人
+                    {keyword.trim() ? "未找到匹配用户" : "暂无其他用户"}
                   </Text>
 
                   <Text className="flow-muted-text mt-1 text-xs">
-                    等待好友上线
+                    {keyword.trim() ? "请尝试其他关键词" : "等待新用户加入"}
                   </Text>
                 </div>
               )
             }}
             renderItem={user => {
               const userId = user.id as number;
+
+              const isOnline = Boolean(state.presences[userId]?.online);
 
               const selected = state.selectedGroupUserIds.includes(userId);
 
@@ -247,7 +267,7 @@ function ConversationSidebar({
                   <List.Item.Meta
                     avatar={(
                       <Badge
-                        color="#31a24c"
+                        color={isOnline ? "#31a24c" : "#a8b0ba"}
                         dot
                         offset={[
                           -4,
@@ -255,7 +275,8 @@ function ConversationSidebar({
                         ]}>
                         <Avatar
                           className="bg-[#e7f3ff] font-bold text-[#1877f2]"
-                          size={42}>
+                          size={42}
+                          src={user.avatar_url}>
                           {getUserName(user).slice(0, 1)}
                         </Avatar>
                       </Badge>
@@ -264,7 +285,7 @@ function ConversationSidebar({
                       <Text
                         className="flow-muted-text"
                         ellipsis>
-                        {user.username ? `@${user.username}` : "在线"}
+                        {getContactDescription(userId, user.username)}
                       </Text>
                     )}
                     title={(

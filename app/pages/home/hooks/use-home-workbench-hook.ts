@@ -477,7 +477,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       // 首页首屏需要三个互不依赖的数据源；并发加载能减少进入工作台的等待时间。
       const [
         userData,
-        conversationList,
+        ,
         userList
       ] = await Promise.all([
         dataGetCurrentUser(),
@@ -493,12 +493,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         reportError(error, "在线状态加载失败");
       });
       void upsertCurrentDevice(false, userData.id);
-
-      const routeConversationId = params.conversationId ? Number(params.conversationId) : null;
-
-      const firstConversationId = conversationList[0]?.id || null;
-
-      setActiveConversationId(routeConversationId || firstConversationId);
     } catch (error) {
       reportError(error, "工作台数据加载失败");
 
@@ -511,7 +505,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     loadConversations,
     loadPresence,
-    params.conversationId,
     reportError,
     upsertCurrentDevice
   ]);
@@ -565,7 +558,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleSelectConversation = useCallback((conversationId: number): void => {
-    setActiveConversationId(conversationId);
     navigate(`/conversations/${conversationId}`);
   }, [
     navigate
@@ -836,12 +828,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         conversation_id: activeConversationId
       });
 
-      const nextConversations = await loadConversations();
-
-      const nextConversationId = nextConversations[0]?.id || null;
-
-      setActiveConversationId(nextConversationId);
-      navigate(nextConversationId ? `/conversations/${nextConversationId}` : "/");
+      await loadConversations();
+      setActiveConversationId(null);
+      navigate("/");
       message.success("已退出群聊");
     } catch (error) {
       reportError(error, "退出群聊失败");
@@ -984,10 +973,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   useEffect(() => {
-    const routeConversationId = params.conversationId ? Number(params.conversationId) : null;
+    const parsedConversationId = params.conversationId ? Number(params.conversationId) : null;
 
-    if (routeConversationId && routeConversationId !== activeConversationId) {
+    const routeConversationId = parsedConversationId && Number.isSafeInteger(parsedConversationId) && parsedConversationId > 0 ? parsedConversationId : null;
+
+    if (routeConversationId !== activeConversationId) {
       setActiveConversationId(routeConversationId);
+      setSearchResults([]);
     }
   }, [
     activeConversationId,

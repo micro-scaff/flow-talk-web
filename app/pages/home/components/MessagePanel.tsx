@@ -54,7 +54,7 @@ function MessagePanel({
   return (
     <div className="flow-chat-panel flex h-full min-w-0 flex-col bg-[#f5f7fb]">
       {/* 搜索结果只展示轻量预览，点击会话或清空后回到正常消息流。 */}
-      {state.searchResults.length > 0 && (
+      {hasActiveConversation && state.searchResults.length > 0 && (
         <div className="flow-search-results border-b border-[#eadfb8] bg-[#fff8df] px-6 py-3">
           <Space
             className="w-full"
@@ -208,17 +208,16 @@ function MessagePanel({
         </Spin>
       </div>
 
-      <footer className={`flow-composer ${hasActiveConversation ? "" : "is-idle"}`}>
-        <div className="flow-composer-inner">
-          <Tooltip title="附件">
-            <Button
-              className="flow-icon-button"
-              disabled={!hasActiveConversation}
-              icon={<PaperClipOutlined />}
-              shape="circle" />
-          </Tooltip>
+      {hasActiveConversation && (
+        <footer className="flow-composer">
+          <div className="flow-composer-inner">
+            <Tooltip title="附件">
+              <Button
+                className="flow-icon-button"
+                icon={<PaperClipOutlined />}
+                shape="circle" />
+            </Tooltip>
 
-          {hasActiveConversation ? (
             <TextArea
               autoSize={{
                 maxRows: 4,
@@ -239,23 +238,18 @@ function MessagePanel({
                 event.preventDefault();
                 void actions.handleSendMessage();
               }} />
-          ) : (
-            <div className="flow-idle-input">
-              选择一个会话后开始输入
-            </div>
-          )}
 
-          <Button
-            className="flow-send-button"
-            disabled={!hasActiveConversation}
-            icon={<SendOutlined />}
-            loading={state.sending}
-            type="primary"
-            onClick={() => {
-              return void actions.handleSendMessage();
-            }} />
-        </div>
-      </footer>
+            <Button
+              className="flow-send-button"
+              icon={<SendOutlined />}
+              loading={state.sending}
+              type="primary"
+              onClick={() => {
+                return void actions.handleSendMessage();
+              }} />
+          </div>
+        </footer>
+      )}
     </div>
   );
 }
