@@ -19,7 +19,7 @@ import {
 function meta(): Array<{ title: string }> {
   return [
     {
-      title: "Flow Talk 工作台"
+      title: "Flow Talk 流言场"
     }
   ];
 }

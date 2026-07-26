@@ -41,7 +41,7 @@ function HomeWorkbench({
   const isContactMode = !state.activeConversationId;
 
   return (
-    <main className={`flow-workbench ${isContactMode ? "is-mobile-contact-mode" : ""} bg-[#f0f2f5] text-[#050505]`}>
+    <main className={`flow-workbench ${isContactMode ? "is-mobile-contact-mode" : ""}`}>
       <Layout className="flow-workbench-layout bg-transparent">
         <ConversationSidebar
           viewModel={viewModel} />

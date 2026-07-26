@@ -80,7 +80,7 @@ function WorkspaceHeader({
         {hasActiveConversation && (
           <>
             <Avatar
-              className="flow-active-avatar shrink-0 bg-[#e7f3ff] text-[#1877f2]"
+              className="flow-active-avatar shrink-0"
               size={40}
               src={headerAvatar || undefined}>
               {headerTitle.slice(0, 1)}
@@ -114,8 +114,8 @@ function WorkspaceHeader({
 
         {!hasActiveConversation && (
           <div className="flow-workspace-heading">
-            <Text>WORKSPACE</Text>
-            <Title level={2}>消息</Title>
+            <Text>RUMOR FEED</Text>
+            <Title level={2}>流言场</Title>
           </div>
         )}
       </div>
@@ -124,7 +124,7 @@ function WorkspaceHeader({
         <Tooltip title="创建群聊并选择成员">
           <Button
             aria-label="创建群聊"
-            className="flow-topbar-action"
+            className="flow-topbar-action flow-create-group-button"
             icon={<TeamOutlined />}
             type="primary"
             onClick={actions.handleOpenGroupCreate}>
@@ -135,9 +135,9 @@ function WorkspaceHeader({
         {hasActiveConversation && (
           <Search
             allowClear
-            aria-label="搜索当前会话消息"
+            aria-label="搜索当前流言"
             className="flow-search-input flow-message-search"
-            placeholder="搜索当前会话"
+            placeholder="搜索当前流言"
             value={state.searchText}
             onChange={event => {
               const nextValue = event.target.value;
@@ -156,7 +156,7 @@ function WorkspaceHeader({
         <Tooltip title="设备管理">
           <Button
             aria-label="管理登录设备"
-            className="flow-icon-button"
+            className="flow-icon-button flow-device-button"
             icon={<LaptopOutlined />}
             shape="circle"
             onClick={() => {
@@ -168,7 +168,7 @@ function WorkspaceHeader({
           <Tooltip title="添加群成员">
             <Button
               aria-label="添加群成员"
-              className="flow-icon-button"
+              className="flow-icon-button flow-member-button"
               icon={<PlusOutlined />}
               shape="circle"
               onClick={() => {

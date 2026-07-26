@@ -269,7 +269,7 @@ function WorkspaceDialogs({
               return (
                 <div
                   key={device.id}
-                  className="flex items-center gap-3 rounded-lg border border-[#e1e5ec] p-3">
+                  className="flow-device-row flex items-center gap-3 rounded-lg border p-3">
                   <Avatar icon={<LaptopOutlined />} />
 
                   <div className="min-w-0 flex-1">

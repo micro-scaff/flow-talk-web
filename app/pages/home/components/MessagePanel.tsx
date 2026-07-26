@@ -84,12 +84,12 @@ function MessagePanel({
   ]);
 
   return (
-    <div className="flow-chat-panel flex h-full min-w-0 flex-col bg-[#f5f7fb]">
+    <div className="flow-chat-panel flex h-full min-w-0 flex-col">
       {/* 搜索结果只展示轻量预览，点击会话或清空后回到正常消息流。 */}
       {hasActiveConversation && state.searchResults.length > 0 && (
         <div
           aria-live="polite"
-          className="flow-search-results border-b border-[#eadfb8] bg-[#fff8df] px-6 py-3"
+          className="flow-search-results border-b px-6 py-3"
           role="status">
           <Space
             className="w-full"
@@ -117,7 +117,7 @@ function MessagePanel({
               return (
                 <Text
                   key={item.id}
-                  className="flow-search-result-item block text-[#65676b]"
+                  className="flow-search-result-item block"
                   ellipsis>
                   {readMessageText(item)}
 
@@ -150,12 +150,12 @@ function MessagePanel({
                     <span />
                   </div>
 
-                  <Text className="text-base font-black text-[#050505]">
-                    暂无消息
+                  <Text className="flow-chat-empty-title text-base font-black">
+                    还没有流言
                   </Text>
 
-                  <Text className="mt-1 text-sm text-[#65676b]">
-                    发送第一条消息
+                  <Text className="flow-chat-empty-support mt-1 text-sm">
+                    说点什么，让它开始流动
                   </Text>
                 </div>
               )}
@@ -173,7 +173,7 @@ function MessagePanel({
 
                 const messageAvatar = (
                   <Avatar
-                    className="shrink-0 bg-[#e7f3ff] font-bold text-[#1877f2]"
+                    className="shrink-0 font-bold"
                     size={32}
                     src={messageUser?.avatar_url || undefined}>
                     {messageName.slice(0, 1)}
@@ -183,11 +183,11 @@ function MessagePanel({
                 return (
                   <div
                     key={item.id}
-                    className={`flow-message-row flex items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}>
+                    className={`flow-message-row ${isMine ? "is-mine justify-end" : "is-peer justify-start"} flex items-end gap-2`}>
                     {!isMine && messageAvatar}
 
                     <div className={`flow-message-group group ${isMine ? "items-end" : "items-start"} flex flex-col`}>
-                      <Text className={`flow-message-meta mb-1 text-xs ${item.status === "failed" ? "is-failed" : ""} ${isMine ? "text-right text-[#8a8d91]" : "text-[#65676b]"}`}>
+                      <Text className={`flow-message-meta mb-1 text-xs ${item.status === "failed" ? "is-failed" : ""} ${isMine ? "text-right" : ""}`}>
                         {messageName}
                         {" · "}
                         {formatDateTime(item.sent_at)}
@@ -236,11 +236,11 @@ function MessagePanel({
               </div>
 
               <div className="flow-default-copy">
-                <Text className="flow-default-eyebrow">WORKSPACE READY</Text>
-                <Text className="flow-default-title">选择一位联系人</Text>
+                <Text className="flow-default-eyebrow">THE WORD IS OUT</Text>
+                <Text className="flow-default-title">听听他们在说什么</Text>
 
                 <Text className="flow-default-support">
-                  在线状态、未读消息和最近会话都在左侧。
+                  最近流言、未读消息和在线的人都在左侧。
                 </Text>
               </div>
             </div>
@@ -252,13 +252,14 @@ function MessagePanel({
         <footer className="flow-composer">
           <div className="flow-composer-inner">
             <TextArea
-              aria-label="消息内容"
+              aria-label="流言内容"
               autoSize={{
                 maxRows: 4,
-                minRows: 2
+                minRows: 1
               }}
               className="flow-message-input"
-              placeholder="输入消息，Enter 发送，Shift + Enter 换行"
+              enterKeyHint="send"
+              placeholder="说点什么，Enter 发送，Shift + Enter 换行"
               value={state.draftText}
               onChange={event => {
                 return actions.setDraftText(event.target.value);

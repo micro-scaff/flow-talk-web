@@ -26,7 +26,7 @@ export default function RegisterRoute(): ReactElement {
 
   return (
     <AuthShell
-      eyebrow="CREATE ACCOUNT"
+      eyebrow="START A RUMOR"
       title="创建 Flow Talk 账号">
       <RegisterForm viewModel={viewModel} />
     </AuthShell>

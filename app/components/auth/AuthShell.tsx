@@ -39,7 +39,7 @@ export function AuthShell({
     <main className="auth-page">
       <section
         className="auth-brand-plane"
-        aria-label="Flow Talk 产品预览">
+        aria-label="Flow Talk 流言预览">
         <header className="auth-brand-header">
           <div
             className="auth-wordmark"
@@ -64,7 +64,7 @@ export function AuthShell({
             </Typography.Title>
 
             <Typography.Paragraph className="brand-copy">
-              把消息留在当下，让协作自然向前。
+              让每句流言，沿人群自然流动。
             </Typography.Paragraph>
           </div>
 
@@ -72,9 +72,9 @@ export function AuthShell({
         </div>
 
         <footer className="auth-brand-footer">
-          <span>实时消息</span>
-          <span>联系人在线状态</span>
-          <span>跨设备同步</span>
+          <span>实时流言</span>
+          <span>在线耳语</span>
+          <span>消息回声</span>
         </footer>
       </section>
 
@@ -82,7 +82,7 @@ export function AuthShell({
         className="auth-access-panel"
         aria-label="Flow Talk 账号认证">
         <div className="auth-topbar">
-          <span className="auth-access-label">FLOW ACCESS</span>
+          <span className="auth-access-label">RUMOR ACCESS</span>
 
           <Button
             aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}
@@ -101,14 +101,14 @@ export function AuthShell({
             </Typography.Title>
 
             <Typography.Text className="form-support">
-              安全地进入你的即时通讯工作区。
+              进入你的流言现场，听听大家正在说什么。
             </Typography.Text>
           </div>
 
           {children}
         </div>
 
-        <p className="auth-legal">Flow Talk · Private by design</p>
+        <p className="auth-legal">Flow Talk · Whispers in motion</p>
       </section>
     </main>
   );

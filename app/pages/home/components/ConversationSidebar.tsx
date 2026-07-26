@@ -4,8 +4,7 @@ import {
   MoonOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SunOutlined,
-  TeamOutlined
+  SunOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -38,11 +37,8 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  getConversationDisplayTitle,
-  getDirectConversationPeer,
   getDirectConversationPeerId,
-  getUserName,
-  readMessageText
+  getUserName
 } from "../utils";
 
 const {
@@ -70,30 +66,6 @@ function sortCopy<T>(values: readonly T[], compare: (source: T, target: T) => nu
   // 当前 tsconfig 目标为 ES2022，复制后排序可避免直接修改接口返回数组。
   // eslint-disable-next-line unicorn/no-array-sort
   return nextValues.sort(compare);
-}
-
-function formatConversationTime(value?: string): string {
-  if (!value) {
-    return "";
-  }
-
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-
-  const today = new Date();
-
-  const isToday = date.toDateString() === today.toDateString();
-
-  return isToday ? date.toLocaleTimeString("zh-CN", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }) : date.toLocaleDateString("zh-CN", {
-    day: "2-digit",
-    month: "2-digit"
-  });
 }
 
 function ConversationSidebar({
@@ -143,19 +115,6 @@ function ConversationSidebar({
     state.users
   ]);
 
-  const recentConversations = useMemo(() => {
-    return sortCopy(state.conversations, (source, target) => {
-      const sourceTime = new Date(source.last_message_at || 0).getTime();
-
-      const targetTime = new Date(target.last_message_at || 0).getTime();
-
-      return targetTime - sourceTime;
-    }).
-        slice(0, 6);
-  }, [
-    state.conversations
-  ]);
-
   const visibleContacts = useMemo(() => {
     if (!normalizedKeyword) {
       return contacts;
@@ -169,25 +128,6 @@ function ConversationSidebar({
   }, [
     contacts,
     normalizedKeyword
-  ]);
-
-  const visibleRecentConversations = useMemo(() => {
-    if (!normalizedKeyword) {
-      return recentConversations;
-    }
-
-    return recentConversations.filter(conversation => {
-      const title = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users);
-
-      const preview = conversation.last_message ? readMessageText(conversation.last_message) : "";
-
-      return `${title} ${preview}`.toLocaleLowerCase("zh-CN").includes(normalizedKeyword);
-    });
-  }, [
-    normalizedKeyword,
-    recentConversations,
-    state.currentUser?.id,
-    state.users
   ]);
 
   const directConversationByUserId = useMemo(() => {
@@ -256,18 +196,18 @@ function ConversationSidebar({
 
   return (
     <Sider
-      className="flow-sidebar border-r border-[#d9dee8] bg-white"
+      className="flow-sidebar"
       theme="light"
       width={360}>
       <div className="flow-sidebar-shell">
         <header className="flow-sidebar-header">
           <div className="flow-brand-row">
             <div
-              aria-label="返回工作台首页"
+              aria-label="返回联系人首页"
               className="flow-brand-lockup flow-brand-button"
               role="button"
               tabIndex={0}
-              title="返回工作台首页"
+              title="返回联系人首页"
               onClick={actions.handleBackToContactList}
               onKeyDown={event => {
                 if (event.key !== "Enter" && event.key !== " ") {
@@ -289,7 +229,7 @@ function ConversationSidebar({
                 <Text
                   className="flow-muted-text mt-1 block max-w-48 text-sm font-semibold"
                   ellipsis>
-                  即时协作空间
+                  流言正在发生
                 </Text>
               </div>
             </div>
@@ -304,9 +244,9 @@ function ConversationSidebar({
                   onClick={toggleTheme} />
               </Tooltip>
 
-              <Tooltip title="刷新会话和联系人">
+              <Tooltip title="刷新联系人状态">
                 <Button
-                  aria-label="刷新会话和联系人"
+                  aria-label="刷新联系人状态"
                   className="flow-icon-button"
                   icon={<ReloadOutlined />}
                   shape="circle"
@@ -361,10 +301,10 @@ function ConversationSidebar({
 
           <Input
             allowClear
-            aria-label="搜索会话或联系人"
+            aria-label="搜索联系人"
             className="flow-search-input"
             prefix={<SearchOutlined />}
-            placeholder="搜索会话或联系人"
+            placeholder="搜索联系人"
             value={keyword}
             onChange={event => {
               setKeyword(event.target.value);
@@ -375,85 +315,6 @@ function ConversationSidebar({
           className="min-h-0 flex-1"
           spinning={state.loading}>
           <div className="flow-sidebar-list-scroll">
-            {visibleRecentConversations.length > 0 && (
-              <section aria-labelledby="recent-conversations-heading">
-                <div className="flow-list-title is-compact">
-                  <div>
-                    <Text className="flow-list-eyebrow">RECENT</Text>
-
-                    <Text
-                      className="text-base font-black"
-                      id="recent-conversations-heading">
-                      最近会话
-                    </Text>
-                  </div>
-
-                  <Tag className="m-0 rounded-full px-2 font-bold">
-                    {visibleRecentConversations.length}
-                  </Tag>
-                </div>
-
-                <div className="flow-recent-list">
-                  {visibleRecentConversations.map(conversation => {
-                    const peer = conversation.type === "direct" ? getDirectConversationPeer(conversation, state.currentUser?.id, state.users) : undefined;
-
-                    const title = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users);
-
-                    const preview = conversation.last_message ? readMessageText(conversation.last_message) : "还没有消息";
-
-                    const active = conversation.id === state.activeConversationId;
-
-                    return (
-                      <button
-                        aria-current={active ? "page" : undefined}
-                        className={`flow-recent-row ${active ? "is-active" : ""}`}
-                        key={conversation.id}
-                        type="button"
-                        onClick={() => {
-                          actions.handleSelectConversation(conversation.id);
-                        }}>
-                        <Badge
-                          count={conversation.unread_count || 0}
-                          offset={[
-                            -2,
-                            2
-                          ]}
-                          overflowCount={99}
-                          size="small">
-                          <Avatar
-                            size={40}
-                            src={(peer?.avatar_url || conversation.avatar_url) || undefined}>
-                            {conversation.type === "group" ? <TeamOutlined /> : title.slice(0, 1)}
-                          </Avatar>
-                        </Badge>
-
-                        <span className="flow-contact-copy">
-                          <span className="flow-contact-heading">
-                            <Text
-                              className="min-w-0"
-                              strong
-                              ellipsis>
-                              {title}
-                            </Text>
-
-                            <time>
-                              {formatConversationTime(conversation.last_message_at)}
-                            </time>
-                          </span>
-
-                          <Text
-                            className="flow-muted-text"
-                            ellipsis>
-                            {preview}
-                          </Text>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
             <section aria-labelledby="contacts-heading">
               <div className="flow-list-title is-compact">
                 <div>
@@ -504,7 +365,7 @@ function ConversationSidebar({
                           overflowCount={99}
                           size="small">
                           <Badge
-                            color={isOnline ? "#ff5c35" : "#a8a39a"}
+                            color={isOnline ? "#c9366f" : "#a89aa3"}
                             dot
                             offset={[
                               -4,
@@ -531,7 +392,7 @@ function ConversationSidebar({
                           <Text
                             className="flow-muted-text"
                             ellipsis>
-                            {isOpening ? "正在打开会话…" : getContactDescription(userId, user.username)}
+                            {isOpening ? "正在打开流言…" : getContactDescription(userId, user.username)}
                           </Text>
                         </span>
                       </button>
@@ -549,7 +410,7 @@ function ConversationSidebar({
                   </Text>
 
                   <Text className="flow-muted-text mt-1 text-xs">
-                    {normalizedKeyword ? "请尝试姓名、账号或消息内容" : "等待新用户加入"}
+                    {normalizedKeyword ? "请尝试姓名或账号" : "等待新用户加入"}
                   </Text>
                 </div>
               )}

@@ -4,19 +4,19 @@ import type {
 
 const messages = [
   {
-    content: "首页方案已同步，留白和层级都舒服多了。",
+    content: "听说楼下那家店今晚要换招牌？",
     name: "Mia",
     side: "left",
     time: "10:24"
   },
   {
-    content: "收到，今天把交互细节一起收尾。",
+    content: "我也听到了，不过还没人证实。",
     name: "You",
     side: "right",
     time: "10:26"
   },
   {
-    content: "发布清单已经更新 ✓",
+    content: "刚有人说老板只是重新装修 👀",
     name: "Lin",
     side: "left",
     time: "刚刚"
@@ -39,7 +39,7 @@ export function ChatPreview(): ReactElement {
           </div>
 
           <div>
-            <strong>产品设计</strong>
+            <strong>楼下发生什么</strong>
             <span>6 位成员 · 3 人在线</span>
           </div>
         </div>

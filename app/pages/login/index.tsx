@@ -46,7 +46,7 @@ export default function LoginRoute(): ReactElement {
 
   return (
     <AuthShell
-      eyebrow="WELCOME BACK"
+      eyebrow="WHISPERS AWAIT"
       title="登录你的账号">
       <LoginForm viewModel={viewModel} />
     </AuthShell>

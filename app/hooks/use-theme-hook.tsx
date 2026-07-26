@@ -142,7 +142,9 @@ export function ThemeProvider({
       algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
       token: {
         borderRadius: 10,
-        colorPrimary: "#ff5c35",
+
+        // 莓红既表示正在传播的消息，也统一承载在线、焦点与主操作状态。
+        colorPrimary: isDark ? "#f0528a" : "#c9366f",
         controlHeight: 42,
         fontFamily: "Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       }
