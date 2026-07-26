@@ -819,7 +819,10 @@ textarea {
 }
 
 .flow-list-title {
+  display: flex;
   align-items: end;
+  justify-content: space-between;
+  gap: 12px;
   padding: 16px 20px 10px;
   border: 0;
 }
@@ -838,6 +841,20 @@ textarea {
 .flow-list-title > div {
   display: grid;
   gap: 2px;
+  min-width: 0;
+}
+
+.flow-list-title .ant-space {
+  display: flex !important;
+  flex: 0 0 auto;
+  align-items: center;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+}
+
+.flow-list-title .ant-space-item {
+  display: flex;
+  align-items: center;
 }
 
 .flow-list-eyebrow {
@@ -846,11 +863,17 @@ textarea {
 
 .flow-list-title .ant-tag,
 .flow-contact-heading .ant-tag {
+  display: inline-flex;
+  min-width: 28px;
+  min-height: 20px;
+  align-items: center;
+  justify-content: center;
   border: 0;
   border-radius: 6px;
   background: var(--flow-primary-soft);
   color: var(--flow-primary);
   font-size: 10px;
+  line-height: 1;
 }
 
 .flow-list-title .flow-contact-refresh.ant-btn {
@@ -1853,6 +1876,11 @@ textarea {
     min-height: 52px;
     align-items: center;
     padding: 14px 18px 8px;
+  }
+
+  .flow-list-title .ant-tag {
+    min-height: 22px;
+    padding: 0 8px;
   }
 
   .flow-list-eyebrow {
