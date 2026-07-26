@@ -2,7 +2,6 @@ import {
   ArrowLeftOutlined,
   LaptopOutlined,
   PlusOutlined,
-  SearchOutlined,
   TeamOutlined
 } from "@ant-design/icons";
 import {
@@ -22,13 +21,18 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  getUserName
+  getConversationDisplayTitle,
+  getDirectConversationPeer
 } from "../utils";
 
 const {
   Text,
   Title
 } = Typography;
+
+const {
+  Search
+} = Input;
 
 interface IWorkspaceHeaderProps {
   viewModel: IHomeWorkbenchViewModel;
@@ -46,23 +50,21 @@ function WorkspaceHeader({
 
   const isDirectConversation = state.activeConversation?.type === "direct";
 
-  const directMember = isDirectConversation ? state.activeConversation?.members?.find(member => {
-    return member.status === "active" && member.user_id !== state.currentUser?.id;
-  }) : undefined;
+  const directUser = state.activeConversation && isDirectConversation ? getDirectConversationPeer(state.activeConversation, state.currentUser?.id, state.users) : undefined;
 
-  const directUser = directMember ? state.users.find(user => {
-    return user.id === directMember.user_id;
-  }) : undefined;
+  const directPresence = directUser?.id ? state.presences[directUser.id] : undefined;
 
-  const directPresence = directMember ? state.presences[directMember.user_id] : undefined;
-
-  const headerTitle = isDirectConversation ? getUserName(directUser || (directMember ? {
-    id: directMember.user_id
-  } : null)) : state.activeTitle;
+  const headerTitle = state.activeConversation ? getConversationDisplayTitle(state.activeConversation, state.currentUser?.id, state.users) : state.activeTitle;
 
   const headerAvatar = isDirectConversation ? directUser?.avatar_url : state.activeConversation?.avatar_url;
 
-  const headerDescription = isDirectConversation ? (directPresence?.online ? "在线" : "离线") : `${state.onlineCount} 位在线`;
+  const groupMemberCount = state.activeConversation?.member_count || state.activeConversation?.members?.length || 0;
+
+  const groupOnlineCount = state.activeConversation?.members?.filter(member => {
+    return member.status === "active" && state.presences[member.user_id]?.online;
+  }).length || 0;
+
+  const headerDescription = isDirectConversation ? (directPresence?.online ? "在线" : "离线") : `${groupMemberCount} 位成员 · ${groupOnlineCount} 人在线`;
 
   return (
     <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"}`}>
@@ -93,10 +95,8 @@ function WorkspaceHeader({
                 </Title>
 
                 {state.activeConversation?.type === "group" && (
-                  <Tag color="blue">
-                    {state.activeConversation.member_count || state.activeConversation.members?.length || 0}
-                    {" "}
-                    人
+                  <Tag className="flow-conversation-tag">
+                    群聊
                   </Tag>
                 )}
               </div>
@@ -111,11 +111,19 @@ function WorkspaceHeader({
             </div>
           </>
         )}
+
+        {!hasActiveConversation && (
+          <div className="flow-workspace-heading">
+            <Text>WORKSPACE</Text>
+            <Title level={2}>消息</Title>
+          </div>
+        )}
       </div>
 
       <Space className="flow-topbar-actions">
         <Tooltip title="创建群聊并选择成员">
           <Button
+            aria-label="创建群聊"
             className="flow-topbar-action"
             icon={<TeamOutlined />}
             type="primary"
@@ -125,22 +133,29 @@ function WorkspaceHeader({
         </Tooltip>
 
         {hasActiveConversation && (
-          <Input
+          <Search
             allowClear
+            aria-label="搜索当前会话消息"
             className="flow-search-input flow-message-search"
-            prefix={<SearchOutlined />}
-            placeholder="搜索消息"
+            placeholder="搜索当前会话"
             value={state.searchText}
             onChange={event => {
-              return actions.setSearchText(event.target.value);
+              const nextValue = event.target.value;
+
+              actions.setSearchText(nextValue);
+
+              if (!nextValue.trim()) {
+                actions.setSearchResults([]);
+              }
             }}
-            onPressEnter={() => {
+            onSearch={() => {
               void actions.handleSearch();
             }} />
         )}
 
         <Tooltip title="设备管理">
           <Button
+            aria-label="管理登录设备"
             className="flow-icon-button"
             icon={<LaptopOutlined />}
             shape="circle"
@@ -152,6 +167,7 @@ function WorkspaceHeader({
         {state.activeConversation?.type === "group" && (
           <Tooltip title="添加群成员">
             <Button
+              aria-label="添加群成员"
               className="flow-icon-button"
               icon={<PlusOutlined />}
               shape="circle"

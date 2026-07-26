@@ -6,7 +6,6 @@ import {
 import {
   Avatar,
   Button,
-  Card,
   Form,
   Input,
   Space,
@@ -51,9 +50,7 @@ export function RegisterForm({
   };
 
   return (
-    <Card
-      className="auth-card"
-      variant="borderless">
+    <div className="auth-card">
       <Form
         form={viewModel.form}
         initialValues={viewModel.initialValues}
@@ -99,10 +96,11 @@ export function RegisterForm({
           <Input placeholder="不填则默认使用账号名" />
         </Form.Item>
 
+        {/* 头像内容只用于提交，不应作为无标签文本框暴露给读屏工具。 */}
         <Form.Item
-          hidden
-          name="avatarBase64">
-          <Input />
+          name="avatarBase64"
+          noStyle>
+          <input type="hidden" />
         </Form.Item>
 
         <Form.Item label="头像">
@@ -131,14 +129,12 @@ export function RegisterForm({
         </Button>
       </Form>
 
-      <Button
-        block
-        className="link-action"
-        icon={<ArrowLeftOutlined />}>
-        <Link to="/login">
-          已有账号，返回登录
-        </Link>
-      </Button>
-    </Card>
+      <Link
+        className="auth-secondary-link link-action"
+        to="/login">
+        <ArrowLeftOutlined />
+        <span>已有账号，返回登录</span>
+      </Link>
+    </div>
   );
 }

@@ -4,8 +4,6 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
-  Card,
-  Divider,
   Form,
   Input,
   Typography
@@ -29,9 +27,7 @@ export function LoginForm({
   viewModel
 }: ILoginFormProps): ReactElement {
   return (
-    <Card
-      className="auth-card"
-      variant="borderless">
+    <div className="auth-card">
       <Form
         form={viewModel.form}
         layout="vertical"
@@ -88,18 +84,17 @@ export function LoginForm({
         </div>
       )}
 
-      <Divider plain>
-        新朋友
-      </Divider>
+      <div className="auth-form-separator">
+        <span>还没有账号？</span>
+      </div>
 
-      <Button
-        block
-        className="secondary-action"
-        icon={<UserAddOutlined />}>
-        <Link to="/register">
-          创建新账号
-        </Link>
-      </Button>
-    </Card>
+      {/* 使用单一链接语义，避免 Button 与 Link 嵌套造成键盘导航和读屏歧义。 */}
+      <Link
+        className="auth-secondary-link"
+        to="/register">
+        <UserAddOutlined />
+        <span>创建新账号</span>
+      </Link>
+    </div>
   );
 }

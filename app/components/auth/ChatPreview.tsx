@@ -4,22 +4,22 @@ import type {
 
 const messages = [
   {
-    content: "今天的接口文档已经同步，登录注册可以先联调。",
-    name: "后端同学",
+    content: "首页方案已同步，留白和层级都舒服多了。",
+    name: "Mia",
     side: "left",
-    time: "09:26"
+    time: "10:24"
   },
   {
-    content: "收到，我会把 token 和用户信息先持久化起来。",
-    name: "前端同学",
+    content: "收到，今天把交互细节一起收尾。",
+    name: "You",
     side: "right",
-    time: "09:28"
+    time: "10:26"
   },
   {
-    content: "Flow Talk 新会话已准备好。",
-    name: "系统",
+    content: "发布清单已经更新 ✓",
+    name: "Lin",
     side: "left",
-    time: "Now"
+    time: "刚刚"
   }
 ];
 
@@ -29,17 +29,24 @@ export function ChatPreview(): ReactElement {
       className="chat-preview"
       aria-label="Flow Talk 聊天预览">
       <div className="chat-preview-header">
-        <div>
-          <strong>
-            项目群聊
-          </strong>
+        <div className="chat-preview-identity">
+          <div
+            className="chat-preview-avatars"
+            aria-hidden="true">
+            <span>M</span>
+            <span>L</span>
+            <span>Y</span>
+          </div>
 
-          <span>
-            12 人在线
-          </span>
+          <div>
+            <strong>产品设计</strong>
+            <span>6 位成员 · 3 人在线</span>
+          </div>
         </div>
 
-        <div className="online-dot" />
+        <div
+          className="online-dot"
+          aria-label="在线" />
       </div>
 
       <div className="chat-message-list">
@@ -62,6 +69,11 @@ export function ChatPreview(): ReactElement {
             </div>
           );
         })}
+      </div>
+
+      <div className="chat-preview-composer">
+        <span>输入消息…</span>
+        <i>↗</i>
       </div>
     </div>
   );

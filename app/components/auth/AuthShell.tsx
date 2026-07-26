@@ -4,7 +4,6 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
-  Space,
   Typography
 } from "antd";
 import type {
@@ -39,14 +38,51 @@ export function AuthShell({
   return (
     <main className="auth-page">
       <section
-        className="auth-hero"
+        className="auth-brand-plane"
+        aria-label="Flow Talk 产品预览">
+        <header className="auth-brand-header">
+          <div
+            className="auth-wordmark"
+            aria-label="Flow Talk">
+            <span className="brand-mark">F</span>
+            <span>Flow Talk</span>
+          </div>
+
+          <span className="auth-version">WEB / 01</span>
+        </header>
+
+        <div className="brand-panel">
+          <div className="brand-copy-block">
+            <Typography.Text className="auth-eyebrow">
+              {eyebrow}
+            </Typography.Text>
+
+            <Typography.Title
+              className="brand-title"
+              level={1}>
+              Flow Talk
+            </Typography.Title>
+
+            <Typography.Paragraph className="brand-copy">
+              把消息留在当下，让协作自然向前。
+            </Typography.Paragraph>
+          </div>
+
+          <ChatPreview />
+        </div>
+
+        <footer className="auth-brand-footer">
+          <span>实时消息</span>
+          <span>联系人在线状态</span>
+          <span>跨设备同步</span>
+        </footer>
+      </section>
+
+      <section
+        className="auth-access-panel"
         aria-label="Flow Talk 账号认证">
         <div className="auth-topbar">
-          <div
-            className="brand-mark"
-            aria-label="Flow Talk">
-            FT
-          </div>
+          <span className="auth-access-label">FLOW ACCESS</span>
 
           <Button
             aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}
@@ -56,40 +92,23 @@ export function AuthShell({
             shape="circle" />
         </div>
 
-        <div className="auth-grid">
-          <div className="brand-panel">
-            <Space
-              className="brand-copy-block"
-              orientation="vertical"
-              size={20}>
-              <Typography.Text className="auth-eyebrow">
-                {eyebrow}
-              </Typography.Text>
-
-              <Typography.Title
-                className="brand-title"
-                level={1}>
-                Flow Talk
-              </Typography.Title>
-
-              <Typography.Paragraph className="brand-copy">
-                把分散的消息、团队讨论和个人联系人收束到一个清爽的即时通讯空间。
-              </Typography.Paragraph>
-            </Space>
-
-            <ChatPreview />
-          </div>
-
-          <div className="auth-card-zone">
+        <div className="auth-card-zone">
+          <div className="auth-form-heading">
             <Typography.Title
               className="form-title"
               level={2}>
               {title}
             </Typography.Title>
 
-            {children}
+            <Typography.Text className="form-support">
+              安全地进入你的即时通讯工作区。
+            </Typography.Text>
           </div>
+
+          {children}
         </div>
+
+        <p className="auth-legal">Flow Talk · Private by design</p>
       </section>
     </main>
   );

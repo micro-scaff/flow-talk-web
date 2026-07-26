@@ -112,10 +112,11 @@ function WorkspaceDialogs({
             <Input placeholder="例如：产品讨论组" />
           </Form.Item>
 
+          {/* 资源 URL 由上传动作回填，隐藏字段只参与表单提交。 */}
           <Form.Item
-            hidden
-            name="avatarUrl">
-            <Input />
+            name="avatarUrl"
+            noStyle>
+            <input type="hidden" />
           </Form.Item>
 
           <Form.Item label="群头像">
@@ -209,9 +210,9 @@ function WorkspaceDialogs({
           </Form.Item>
 
           <Form.Item
-            hidden
-            name="avatarUrl">
-            <Input />
+            name="avatarUrl"
+            noStyle>
+            <input type="hidden" />
           </Form.Item>
 
           <Form.Item label="群头像">

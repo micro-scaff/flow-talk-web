@@ -44,11 +44,7 @@ function HomeWorkbench({
     <main className={`flow-workbench ${isContactMode ? "is-mobile-contact-mode" : ""} bg-[#f0f2f5] text-[#050505]`}>
       <Layout className="flow-workbench-layout bg-transparent">
         <ConversationSidebar
-          isMobileOpen={false}
-          viewModel={viewModel}
-          onMobileClose={() => {
-            return undefined;
-          }} />
+          viewModel={viewModel} />
 
         <Content className="flow-workbench-content flex min-w-0 flex-col">
           {state.errorNotice && (

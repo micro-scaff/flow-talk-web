@@ -95,6 +95,9 @@ function writeStoredTheme(nextMode: TThemeMode): void {
     return;
   }
 
+  // 先同步页面属性，再通知 React 更新 Ant Design token，避免主题切换瞬间出现明暗闪烁。
+  document.documentElement.dataset.theme = nextMode;
+  document.documentElement.style.colorScheme = nextMode;
   window.localStorage.setItem(THEME_STORAGE_KEY, nextMode);
   themeListeners.forEach(listener => {
     listener();
@@ -138,9 +141,10 @@ export function ThemeProvider({
     return {
       algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
       token: {
-        borderRadius: 8,
-        colorPrimary: "#1877f2",
-        fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+        borderRadius: 10,
+        colorPrimary: "#ff5c35",
+        controlHeight: 42,
+        fontFamily: "Manrope, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
       }
     };
   }, [

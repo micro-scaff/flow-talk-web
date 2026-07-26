@@ -318,14 +318,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     conversations
   ]);
 
-  const onlineCount = useMemo(() => {
-    return Object.values(presences).filter(item => {
-      return item.online;
-    }).length;
-  }, [
-    presences
-  ]);
-
   const activeTitle = getConversationTitle(activeConversation || activeConversationListItem);
 
   const reportError = useCallback((error: unknown, fallback: string): void => {
@@ -993,11 +985,16 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       });
 
       setSearchResults(results);
+
+      if (results.length === 0) {
+        message.info("未找到相关消息");
+      }
     } catch (error) {
       reportError(error, "消息搜索失败");
     }
   }, [
     activeConversationId,
+    message,
     reportError,
     searchText
   ]);
@@ -1232,7 +1229,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     loading,
     messageLoading,
     messages,
-    onlineCount,
     presences,
     searchResults,
     searchText,

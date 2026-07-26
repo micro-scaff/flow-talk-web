@@ -1,11 +1,11 @@
 import {
-  CloseOutlined,
   LogoutOutlined,
   MessageOutlined,
   MoonOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SunOutlined
+  SunOutlined,
+  TeamOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -23,9 +23,13 @@ import type {
   ReactElement
 } from "react";
 import {
+  useMemo,
   useState
 } from "react";
 
+import type {
+  IDataConversationListItem
+} from "~/api";
 import {
   useThemeHook
 } from "~/hooks/use-theme-hook";
@@ -34,7 +38,11 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  getUserName
+  getConversationDisplayTitle,
+  getDirectConversationPeer,
+  getDirectConversationPeerId,
+  getUserName,
+  readMessageText
 } from "../utils";
 
 const {
@@ -47,23 +55,49 @@ const {
 } = Typography;
 
 interface IConversationSidebarProps {
-  isMobileOpen: boolean;
   viewModel: IHomeWorkbenchViewModel;
-  onMobileClose: () => void;
 }
 
-function buildDirectKey(userId: number, targetUserId: number): string {
-  const firstUserId = Math.min(userId, targetUserId);
+function normalizeSearchValue(value: string): string {
+  return value.trim().toLocaleLowerCase("zh-CN");
+}
 
-  const secondUserId = Math.max(userId, targetUserId);
+function sortCopy<T>(values: readonly T[], compare: (source: T, target: T) => number): T[] {
+  const nextValues = [
+    ...values
+  ];
 
-  return `${firstUserId}:${secondUserId}`;
+  // 当前 tsconfig 目标为 ES2022，复制后排序可避免直接修改接口返回数组。
+  // eslint-disable-next-line unicorn/no-array-sort
+  return nextValues.sort(compare);
+}
+
+function formatConversationTime(value?: string): string {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const today = new Date();
+
+  const isToday = date.toDateString() === today.toDateString();
+
+  return isToday ? date.toLocaleTimeString("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }) : date.toLocaleDateString("zh-CN", {
+    day: "2-digit",
+    month: "2-digit"
+  });
 }
 
 function ConversationSidebar({
-  isMobileOpen,
-  viewModel,
-  onMobileClose
+  viewModel
 }: IConversationSidebarProps): ReactElement {
   const {
     actions,
@@ -80,15 +114,102 @@ function ConversationSidebar({
     setKeyword
   ] = useState("");
 
-  const contacts = state.users.filter(user => {
-    return Boolean(user.id) && user.id !== state.currentUser?.id;
-  });
+  const [
+    openingUserId,
+    setOpeningUserId
+  ] = useState<number | null>(null);
 
-  const visibleContacts = contacts.filter(user => {
-    const matchesKeyword = !keyword.trim() || getUserName(user).toLowerCase().includes(keyword.trim().toLowerCase()) || user.username?.toLowerCase().includes(keyword.trim().toLowerCase());
+  const normalizedKeyword = normalizeSearchValue(keyword);
 
-    return matchesKeyword;
-  });
+  const contacts = useMemo(() => {
+    const availableContacts = state.users.filter(user => {
+      return Boolean(user.id) && user.id !== state.currentUser?.id;
+    });
+
+    return sortCopy(availableContacts, (source, target) => {
+      const sourceOnline = Number(Boolean(state.presences[source.id as number]?.online));
+
+      const targetOnline = Number(Boolean(state.presences[target.id as number]?.online));
+
+      if (sourceOnline !== targetOnline) {
+        return targetOnline - sourceOnline;
+      }
+
+      return getUserName(source).localeCompare(getUserName(target), "zh-CN");
+    });
+  }, [
+    state.currentUser?.id,
+    state.presences,
+    state.users
+  ]);
+
+  const recentConversations = useMemo(() => {
+    return sortCopy(state.conversations, (source, target) => {
+      const sourceTime = new Date(source.last_message_at || 0).getTime();
+
+      const targetTime = new Date(target.last_message_at || 0).getTime();
+
+      return targetTime - sourceTime;
+    }).
+        slice(0, 6);
+  }, [
+    state.conversations
+  ]);
+
+  const visibleContacts = useMemo(() => {
+    if (!normalizedKeyword) {
+      return contacts;
+    }
+
+    return contacts.filter(user => {
+      const searchableText = `${getUserName(user)} ${user.username || ""}`.toLocaleLowerCase("zh-CN");
+
+      return searchableText.includes(normalizedKeyword);
+    });
+  }, [
+    contacts,
+    normalizedKeyword
+  ]);
+
+  const visibleRecentConversations = useMemo(() => {
+    if (!normalizedKeyword) {
+      return recentConversations;
+    }
+
+    return recentConversations.filter(conversation => {
+      const title = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users);
+
+      const preview = conversation.last_message ? readMessageText(conversation.last_message) : "";
+
+      return `${title} ${preview}`.toLocaleLowerCase("zh-CN").includes(normalizedKeyword);
+    });
+  }, [
+    normalizedKeyword,
+    recentConversations,
+    state.currentUser?.id,
+    state.users
+  ]);
+
+  const directConversationByUserId = useMemo(() => {
+    const conversationMap = new Map<number, IDataConversationListItem>();
+
+    for (const conversation of state.conversations) {
+      if (conversation.type !== "direct") {
+        continue;
+      }
+
+      const peerUserId = getDirectConversationPeerId(conversation, state.currentUser?.id);
+
+      if (peerUserId) {
+        conversationMap.set(peerUserId, conversation);
+      }
+    }
+
+    return conversationMap;
+  }, [
+    state.conversations,
+    state.currentUser?.id
+  ]);
 
   const onlineContactCount = contacts.filter(user => {
     return state.presences[user.id as number]?.online;
@@ -100,64 +221,53 @@ function ConversationSidebar({
 
   const currentUserName = getUserName(state.currentUser);
 
-  const activeDirectUserId = state.activeConversation?.type === "direct" ? state.activeConversation.members?.find(member => {
-    return member.status === "active" && member.user_id !== state.currentUser?.id;
-  })?.user_id : undefined;
-
-  function getContactStatus(userId: number): string {
-    return state.presences[userId]?.online ? "在线" : "离线";
-  }
+  const activeDirectUserId = state.activeConversation?.type === "direct" ? getDirectConversationPeerId(state.activeConversation, state.currentUser?.id) : undefined;
 
   function getContactDescription(userId: number, username?: string): string {
     return [
       username ? `@${username}` : "",
-      getContactStatus(userId)
+      state.presences[userId]?.online ? "在线" : "离线"
     ].filter(Boolean).join(" · ");
   }
 
-  function getDirectUnreadCount(userId: number): number {
-    if (!state.currentUser?.id) {
-      return 0;
+  async function handleOpenContact(userId: number): Promise<void> {
+    if (openingUserId !== null) {
+      return;
     }
 
-    const directKey = buildDirectKey(state.currentUser.id, userId);
+    const existingConversation = directConversationByUserId.get(userId);
 
-    const conversation = state.conversations.find(item => {
-      if (item.type !== "direct") {
-        return false;
-      }
+    if (existingConversation) {
 
-      if (item.direct_key) {
-        return item.direct_key === directKey;
-      }
+      // 已有单聊直接导航，避免重复请求创建接口并让常用联系人打开得更快。
+      actions.handleSelectConversation(existingConversation.id);
 
-      if (item.unread_count && item.last_message?.sender_id === userId) {
-        return true;
-      }
+      return;
+    }
 
-      return Boolean(item.members?.some(member => {
-        return member.status === "active" && member.user_id === userId;
-      }));
-    });
+    setOpeningUserId(userId);
 
-    return conversation?.unread_count || 0;
+    try {
+      await actions.handleCreateDirectWithUser(userId);
+    } finally {
+      setOpeningUserId(null);
+    }
   }
 
   return (
     <Sider
-      className={`flow-sidebar ${isMobileOpen ? "is-mobile-open" : ""} border-r border-[#d9dee8] bg-white`}
+      className="flow-sidebar border-r border-[#d9dee8] bg-white"
       theme="light"
       width={360}>
       <div className="flow-sidebar-shell">
-        {/* 顶部区域放全局工具：主题、刷新、退出，以及当前登录用户信息。 */}
         <header className="flow-sidebar-header">
           <div className="flow-brand-row">
             <div
-              aria-label="返回欢迎页"
+              aria-label="返回工作台首页"
               className="flow-brand-lockup flow-brand-button"
               role="button"
               tabIndex={0}
-              title="返回欢迎页"
+              title="返回工作台首页"
               onClick={actions.handleBackToContactList}
               onKeyDown={event => {
                 if (event.key !== "Enter" && event.key !== " ") {
@@ -167,9 +277,7 @@ function ConversationSidebar({
                 event.preventDefault();
                 actions.handleBackToContactList();
               }}>
-              <div className="flow-brand-mark">
-                FT
-              </div>
+              <div className="flow-brand-mark">FT</div>
 
               <div className="min-w-0">
                 <Title
@@ -181,21 +289,12 @@ function ConversationSidebar({
                 <Text
                   className="flow-muted-text mt-1 block max-w-48 text-sm font-semibold"
                   ellipsis>
-                  Talk workspace
+                  即时协作空间
                 </Text>
               </div>
             </div>
 
-            <Space size={6}>
-              <Tooltip title="关闭联系人栏">
-                <Button
-                  aria-label="关闭联系人栏"
-                  className="flow-icon-button flow-mobile-sidebar-close"
-                  icon={<CloseOutlined />}
-                  shape="circle"
-                  onClick={onMobileClose} />
-              </Tooltip>
-
+            <Space size={4}>
               <Tooltip title={isDark ? "切换到白天模式" : "切换到黑夜模式"}>
                 <Button
                   aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}
@@ -205,8 +304,9 @@ function ConversationSidebar({
                   onClick={toggleTheme} />
               </Tooltip>
 
-              <Tooltip title="刷新">
+              <Tooltip title="刷新会话和联系人">
                 <Button
+                  aria-label="刷新会话和联系人"
                   className="flow-icon-button"
                   icon={<ReloadOutlined />}
                   shape="circle"
@@ -217,6 +317,7 @@ function ConversationSidebar({
 
               <Tooltip title="退出登录">
                 <Button
+                  aria-label="退出登录"
                   className="flow-icon-button"
                   icon={<LogoutOutlined />}
                   shape="circle"
@@ -260,122 +361,200 @@ function ConversationSidebar({
 
           <Input
             allowClear
+            aria-label="搜索会话或联系人"
             className="flow-search-input"
             prefix={<SearchOutlined />}
-            placeholder="搜索全部用户"
+            placeholder="搜索会话或联系人"
             value={keyword}
             onChange={event => {
               setKeyword(event.target.value);
             }} />
         </header>
 
-        <div className="flow-list-title">
-          <div>
-            <Text className="text-base font-black">
-              全部用户
-            </Text>
-          </div>
-
-          <Tag
-            className="m-0 rounded-full px-2 font-bold"
-            color={totalUnreadCount > 0 ? "red" : "blue"}>
-            {totalUnreadCount > 0 ? `${totalUnreadCount} 未读` : visibleContacts.length}
-          </Tag>
-        </div>
-
         <Spin
           className="min-h-0 flex-1"
           spinning={state.loading}>
-          {visibleContacts.length > 0 ? (
-            <div className="flow-contact-list">
-              {visibleContacts.map(user => {
-                const userId = user.id as number;
+          <div className="flow-sidebar-list-scroll">
+            {visibleRecentConversations.length > 0 && (
+              <section aria-labelledby="recent-conversations-heading">
+                <div className="flow-list-title is-compact">
+                  <div>
+                    <Text className="flow-list-eyebrow">RECENT</Text>
 
-                const isOnline = Boolean(state.presences[userId]?.online);
+                    <Text
+                      className="text-base font-black"
+                      id="recent-conversations-heading">
+                      最近会话
+                    </Text>
+                  </div>
 
-                const active = activeDirectUserId === userId;
+                  <Tag className="m-0 rounded-full px-2 font-bold">
+                    {visibleRecentConversations.length}
+                  </Tag>
+                </div>
 
-                const unreadCount = getDirectUnreadCount(userId);
+                <div className="flow-recent-list">
+                  {visibleRecentConversations.map(conversation => {
+                    const peer = conversation.type === "direct" ? getDirectConversationPeer(conversation, state.currentUser?.id, state.users) : undefined;
 
-                return (
+                    const title = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users);
 
-                // 点击联系人直接打开单聊；当前单聊联系人保持高亮。
-                  <button
-                    aria-current={active ? "true" : undefined}
-                    className={`flow-contact-row ${active ? "is-active" : ""}`}
-                    key={userId}
-                    type="button"
-                    onClick={() => {
-                      void actions.handleCreateDirectWithUser(userId);
-                      onMobileClose();
-                    }}>
-                    <Badge
-                      count={unreadCount}
-                      offset={[
-                        -2,
-                        2
-                      ]}
-                      overflowCount={99}
-                      size="small">
-                      <Badge
-                        color={isOnline ? "#31a24c" : "#a8b0ba"}
-                        dot
-                        offset={[
-                          -4,
-                          36
-                        ]}>
-                        <Avatar
-                          className="bg-[#e7f3ff] font-bold text-[#1877f2]"
-                          size={42}
-                          src={user.avatar_url || undefined}>
-                          {getUserName(user).slice(0, 1)}
-                        </Avatar>
-                      </Badge>
-                    </Badge>
+                    const preview = conversation.last_message ? readMessageText(conversation.last_message) : "还没有消息";
 
-                    <span className="flow-contact-copy">
-                      <span className="flow-contact-heading">
-                        <Text
-                          className="min-w-0"
-                          strong
-                          ellipsis>
-                          {getUserName(user)}
-                        </Text>
+                    const active = conversation.id === state.activeConversationId;
 
-                        {active && (
-                          <Tag
-                            className="m-0 rounded-full px-2 font-bold"
-                            color="blue">
-                            聊天中
-                          </Tag>
-                        )}
-                      </span>
+                    return (
+                      <button
+                        aria-current={active ? "page" : undefined}
+                        className={`flow-recent-row ${active ? "is-active" : ""}`}
+                        key={conversation.id}
+                        type="button"
+                        onClick={() => {
+                          actions.handleSelectConversation(conversation.id);
+                        }}>
+                        <Badge
+                          count={conversation.unread_count || 0}
+                          offset={[
+                            -2,
+                            2
+                          ]}
+                          overflowCount={99}
+                          size="small">
+                          <Avatar
+                            size={40}
+                            src={(peer?.avatar_url || conversation.avatar_url) || undefined}>
+                            {conversation.type === "group" ? <TeamOutlined /> : title.slice(0, 1)}
+                          </Avatar>
+                        </Badge>
 
-                      <Text
-                        className="flow-muted-text"
-                        ellipsis>
-                        {getContactDescription(userId, user.username)}
-                      </Text>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flow-contact-empty">
-              <div className="flow-empty-avatar">
-                <MessageOutlined />
+                        <span className="flow-contact-copy">
+                          <span className="flow-contact-heading">
+                            <Text
+                              className="min-w-0"
+                              strong
+                              ellipsis>
+                              {title}
+                            </Text>
+
+                            <time>
+                              {formatConversationTime(conversation.last_message_at)}
+                            </time>
+                          </span>
+
+                          <Text
+                            className="flow-muted-text"
+                            ellipsis>
+                            {preview}
+                          </Text>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            <section aria-labelledby="contacts-heading">
+              <div className="flow-list-title is-compact">
+                <div>
+                  <Text className="flow-list-eyebrow">CONTACTS</Text>
+
+                  <Text
+                    className="text-base font-black"
+                    id="contacts-heading">
+                    全部联系人
+                  </Text>
+                </div>
+
+                <Tag className="m-0 rounded-full px-2 font-bold">
+                  {visibleContacts.length}
+                </Tag>
               </div>
 
-              <Text className="text-sm font-bold">
-                {keyword.trim() ? "未找到匹配用户" : "暂无其他用户"}
-              </Text>
+              {visibleContacts.length > 0 ? (
+                <div className="flow-contact-list">
+                  {visibleContacts.map(user => {
+                    const userId = user.id as number;
 
-              <Text className="flow-muted-text mt-1 text-xs">
-                {keyword.trim() ? "请尝试其他关键词" : "等待新用户加入"}
-              </Text>
-            </div>
-          )}
+                    const isOnline = Boolean(state.presences[userId]?.online);
+
+                    const active = activeDirectUserId === userId;
+
+                    const unreadCount = directConversationByUserId.get(userId)?.unread_count || 0;
+
+                    const isOpening = openingUserId === userId;
+
+                    return (
+                      <button
+                        aria-busy={isOpening}
+                        aria-current={active ? "page" : undefined}
+                        className={`flow-contact-row ${active ? "is-active" : ""}`}
+                        disabled={openingUserId !== null}
+                        key={userId}
+                        type="button"
+                        onClick={() => {
+                          void handleOpenContact(userId);
+                        }}>
+                        <Badge
+                          count={unreadCount}
+                          offset={[
+                            -2,
+                            2
+                          ]}
+                          overflowCount={99}
+                          size="small">
+                          <Badge
+                            color={isOnline ? "#ff5c35" : "#a8a39a"}
+                            dot
+                            offset={[
+                              -4,
+                              36
+                            ]}>
+                            <Avatar
+                              size={42}
+                              src={user.avatar_url || undefined}>
+                              {getUserName(user).slice(0, 1)}
+                            </Avatar>
+                          </Badge>
+                        </Badge>
+
+                        <span className="flow-contact-copy">
+                          <span className="flow-contact-heading">
+                            <Text
+                              className="min-w-0"
+                              strong
+                              ellipsis>
+                              {getUserName(user)}
+                            </Text>
+                          </span>
+
+                          <Text
+                            className="flow-muted-text"
+                            ellipsis>
+                            {isOpening ? "正在打开会话…" : getContactDescription(userId, user.username)}
+                          </Text>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flow-contact-empty">
+                  <div className="flow-empty-avatar">
+                    <MessageOutlined />
+                  </div>
+
+                  <Text className="text-sm font-bold">
+                    {normalizedKeyword ? "未找到匹配结果" : "暂无其他联系人"}
+                  </Text>
+
+                  <Text className="flow-muted-text mt-1 text-xs">
+                    {normalizedKeyword ? "请尝试姓名、账号或消息内容" : "等待新用户加入"}
+                  </Text>
+                </div>
+              )}
+            </section>
+          </div>
         </Spin>
       </div>
     </Sider>

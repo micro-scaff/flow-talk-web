@@ -22,6 +22,8 @@ interface IUpdateConversationSummaryOptions {
 
 type TNamedUser = Pick<IDataGetCurrentUser, "id" | "nickname" | "username">;
 
+type TConversationUser = Pick<IDataGetCurrentUser, "avatar_url" | "id" | "nickname" | "username">;
+
 function createLocalMessageId(): number {
 
   // 本地临时消息使用负数 ID，避免和后端自增正数 ID 冲突。
@@ -38,6 +40,59 @@ function getConversationTitle(conversation?: IDataConversation | IDataConversati
   }
 
   return conversation.title || (conversation.type === "direct" ? "单聊会话" : "群聊会话");
+}
+
+function getDirectConversationPeerId(
+    conversation: IDataConversation | IDataConversationListItem,
+    currentUserId?: number
+): number | undefined {
+  const memberUserId = conversation.members?.find(member => {
+    return member.status === "active" && member.user_id !== currentUserId;
+  })?.user_id;
+
+  if (memberUserId) {
+    return memberUserId;
+  }
+
+  // 列表接口可能只返回 direct_key；用它兜底可确保单聊仍能显示正确联系人。
+  return conversation.direct_key?.
+      split(":").
+      map(Number).
+      find(userId => {
+        return Number.isFinite(userId) && userId !== currentUserId;
+      });
+}
+
+function getDirectConversationPeer(
+    conversation: IDataConversation | IDataConversationListItem,
+    currentUserId: number | undefined,
+    users: readonly TConversationUser[]
+): TConversationUser | undefined {
+  const peerUserId = getDirectConversationPeerId(conversation, currentUserId);
+
+  return users.find(user => {
+    return user.id === peerUserId;
+  });
+}
+
+function getConversationDisplayTitle(
+    conversation: IDataConversation | IDataConversationListItem,
+    currentUserId: number | undefined,
+    users: readonly TConversationUser[]
+): string {
+  if (conversation.type !== "direct") {
+    return getConversationTitle(conversation);
+  }
+
+  const peer = getDirectConversationPeer(conversation, currentUserId, users);
+
+  if (peer) {
+    return getUserName(peer);
+  }
+
+  const peerUserId = getDirectConversationPeerId(conversation, currentUserId);
+
+  return conversation.title || (peerUserId ? `用户 ${peerUserId}` : "单聊会话");
 }
 
 function formatDateTime(value?: string): string {
@@ -288,7 +343,10 @@ export {
   createLocalSendingMessage,
   formatDateTime,
   getActionErrorMessage,
+  getConversationDisplayTitle,
   getConversationTitle,
+  getDirectConversationPeer,
+  getDirectConversationPeerId,
   getUserName,
   hasMessage,
   isFormValidationError,

@@ -49,7 +49,6 @@ export interface IHomeWorkbenchState {
   loading: boolean;
   messageLoading: boolean;
   messages: IDataMessage[];
-  onlineCount: number;
   presences: Record<number, IDataPresence>;
   searchResults: IDataMessage[];
   searchText: string;
