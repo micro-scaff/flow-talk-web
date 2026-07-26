@@ -326,11 +326,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState(false);
 
   const [
-    resourceUploading,
-    setResourceUploading
-  ] = useState(false);
-
-  const [
     directModalOpen,
     setDirectModalOpen
   ] = useState(false);
@@ -1065,11 +1060,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     reportError
   ]);
 
-  const sendOptimisticMessage = useCallback(async (
-      messageType: IDataMessage["message_type"],
-      content: IDataMessage["content"]
-  ): Promise<void> => {
-    if (!activeConversationId || !currentUser?.id || !messageType || !content) {
+  const sendOptimisticMessage = useCallback(async (content: IDataMessage["content"]): Promise<void> => {
+    if (!activeConversationId || !currentUser?.id || !content) {
       return;
     }
 
@@ -1081,14 +1073,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       clientMsgId,
       content,
       conversationId: activeConversationId,
-      messageType
+      messageType: "text"
     };
 
     const localMessage = createLocalSendingMessage({
       clientMsgId,
       content,
       conversationId: activeConversationId,
-      messageType,
+      messageType: "text",
       senderId: currentUser.id
     });
 
@@ -1101,7 +1093,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         client_msg_id: clientMsgId,
         content,
         conversation_id: activeConversationId,
-        message_type: messageType
+        message_type: "text"
       },
       request_id: requestId,
       type: "message.send"
@@ -1139,7 +1131,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     }
 
     setDraftText("");
-    await sendOptimisticMessage("text", {
+    await sendOptimisticMessage({
       text: trimmedText
     });
   }, [
@@ -1147,39 +1139,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     sendOptimisticMessage
   ]);
 
-  const handleSendImage = useCallback(async (file: File): Promise<void> => {
-    if (!file.type.startsWith("image/")) {
-      message.warning("请选择图片文件");
-
-      return;
-    }
-
-    setResourceUploading(true);
-
-    try {
-      const resource = await dataUploadResource({
-        file,
-        type: "image"
-      });
-
-      await sendOptimisticMessage("image", {
-        name: file.name,
-        size: file.size,
-        url: resource.url
-      });
-    } catch (error) {
-      reportError(error, "图片发送失败");
-    } finally {
-      setResourceUploading(false);
-    }
-  }, [
-    message,
-    reportError,
-    sendOptimisticMessage
-  ]);
-
   const handleRetryMessage = useCallback(async (messageItem: IDataMessage): Promise<void> => {
-    if (!messageItem.client_msg_id || messageItem.status !== "failed") {
+    if (
+      !messageItem.client_msg_id ||
+      messageItem.status !== "failed" ||
+      (messageItem.message_type || "text") !== "text" ||
+      typeof messageItem.content?.text !== "string"
+    ) {
       return;
     }
 
@@ -1194,9 +1160,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     await sendMessageByHttp({
       clientMsgId: messageItem.client_msg_id,
-      content: messageItem.content || {},
+      content: {
+        text: messageItem.content.text
+      },
       conversationId: messageItem.conversation_id,
-      messageType: messageItem.message_type || "text"
+      messageType: "text"
     });
   }, [
     sendMessageByHttp
@@ -1578,7 +1546,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     messageLoading,
     messages,
     presences,
-    resourceUploading,
     searchResults,
     searchText,
     selectedDirectUserId,
@@ -1622,7 +1589,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleRemoveMember,
     handleSearch,
     handleSelectConversation,
-    handleSendImage,
     handleSendMessage,
     handleRetryMessage,
     handleUpdateGroupProfile,

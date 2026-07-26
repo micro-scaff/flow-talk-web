@@ -24,6 +24,7 @@ import {
 } from "~/utils";
 
 import {
+  isAvatarFileSizeAllowed,
   isImageFile,
   readFileAsBase64
 } from "../utils";
@@ -62,6 +63,12 @@ export function useRegisterFormHook(): IRegisterFormHook {
   const onAvatarUpload = async (file: File): Promise<void> => {
     if (!isImageFile(file)) {
       message.warning("请选择图片文件");
+
+      return;
+    }
+
+    if (!isAvatarFileSizeAllowed(file)) {
+      message.warning("头像大小不能超过 10 MB");
 
       return;
     }

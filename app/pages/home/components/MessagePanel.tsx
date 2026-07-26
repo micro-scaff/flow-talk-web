@@ -1,5 +1,4 @@
 import {
-  PictureOutlined,
   ReloadOutlined,
   SendOutlined
 } from "@ant-design/icons";
@@ -9,8 +8,7 @@ import {
   Input,
   Space,
   Spin,
-  Typography,
-  Upload
+  Typography
 } from "antd";
 import type {
   ReactElement
@@ -26,6 +24,7 @@ import type {
 import {
   formatDateTime,
   getUserName,
+  isTextMessage,
   readMessageText
 } from "../utils";
 
@@ -51,13 +50,17 @@ function MessagePanel({
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
+  const textMessages = state.messages.filter(isTextMessage);
+
+  const textSearchResults = state.searchResults.filter(isTextMessage);
+
   const chatScrollRef = useRef<HTMLDivElement>(null);
 
   const messageBottomRef = useRef<HTMLDivElement>(null);
 
   const skipNextAutoScrollRef = useRef(false);
 
-  const latestMessage = state.messages.at(-1);
+  const latestMessage = textMessages.at(-1);
 
   useEffect(() => {
     if (!hasActiveConversation || state.messageLoading) {
@@ -91,7 +94,7 @@ function MessagePanel({
     latestMessage?.status,
     state.activeConversationId,
     state.messageLoading,
-    state.messages.length
+    textMessages.length
   ]);
 
   async function handleLoadEarlierMessages(): Promise<void> {
@@ -113,7 +116,7 @@ function MessagePanel({
   return (
     <div className="flow-chat-panel flex h-full min-w-0 flex-col">
       {/* 搜索结果只展示轻量预览，点击会话或清空后回到正常消息流。 */}
-      {state.searchResults.length > 0 && (
+      {textSearchResults.length > 0 && (
         <div
           aria-live="polite"
           className="flow-search-results border-b px-6 py-3"
@@ -125,7 +128,7 @@ function MessagePanel({
               <Text strong>
                 找到
                 {" "}
-                {state.searchResults.length}
+                {textSearchResults.length}
                 {" "}
                 条消息
               </Text>
@@ -140,7 +143,7 @@ function MessagePanel({
               </Button>
             </div>
 
-            {state.searchResults.slice(0, 5).map(item => {
+            {textSearchResults.slice(0, 5).map(item => {
               return (
                 <button
                   key={item.id}
@@ -187,7 +190,7 @@ function MessagePanel({
                 </Button>
               )}
 
-              {state.messages.length === 0 && (
+              {textMessages.length === 0 && (
                 <div className="flow-chat-empty">
                   <div className="flow-empty-bubble-stack">
                     <span />
@@ -205,7 +208,7 @@ function MessagePanel({
                 </div>
               )}
 
-              {state.messages.map(item => {
+              {textMessages.map(item => {
                 const isMine = item.sender_id === state.currentUser?.id;
 
                 const sender = state.users.find(user => {
@@ -241,17 +244,9 @@ function MessagePanel({
                       </Text>
 
                       <div className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${item.status === "failed" ? "is-failed" : ""}`}>
-                        {item.message_type === "image" && item.content?.url ? (
-                          <img
-                            alt={item.content.name || "消息图片"}
-                            className="flow-message-image"
-                            loading="lazy"
-                            src={item.content.url} />
-                        ) : (
-                          <div className="whitespace-pre-wrap break-words text-sm leading-6">
-                            {readMessageText(item)}
-                          </div>
-                        )}
+                        <div className="whitespace-pre-wrap break-words text-sm leading-6">
+                          {readMessageText(item)}
+                        </div>
                       </div>
 
                       {item.status === "failed" && (
@@ -317,23 +312,6 @@ function MessagePanel({
       {hasActiveConversation && (
         <footer className="flow-composer">
           <div className="flow-composer-inner">
-            <Upload
-              accept="image/*"
-              beforeUpload={file => {
-                void actions.handleSendImage(file);
-
-                return Upload.LIST_IGNORE;
-              }}
-              maxCount={1}
-              showUploadList={false}>
-              <Button
-                aria-label="发送图片"
-                className="flow-composer-media-button flow-icon-button"
-                icon={<PictureOutlined />}
-                loading={state.resourceUploading}
-                shape="circle" />
-            </Upload>
-
             <TextArea
               aria-label="流言内容"
               autoSize={{

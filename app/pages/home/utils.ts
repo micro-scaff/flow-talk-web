@@ -114,6 +114,10 @@ function formatDateTime(value?: string): string {
   });
 }
 
+function isTextMessage(messageItem: IDataMessage): boolean {
+  return (messageItem.message_type || "text") === "text" && typeof messageItem.content?.text === "string";
+}
+
 function readMessageText(messageItem?: IDataMessage): string {
   if (!messageItem?.content) {
     return "[空消息]";
@@ -123,11 +127,7 @@ function readMessageText(messageItem?: IDataMessage): string {
     return messageItem.content.text;
   }
 
-  if (typeof messageItem.content.url === "string") {
-    return messageItem.content.url;
-  }
-
-  return JSON.stringify(messageItem.content);
+  return "[空消息]";
 }
 
 function pickWsMessage(payload: unknown): IDataMessage | null {
@@ -350,6 +350,7 @@ export {
   getUserName,
   hasMessage,
   isFormValidationError,
+  isTextMessage,
   markMessageFailed,
   mergeMessage,
   mergePresence,

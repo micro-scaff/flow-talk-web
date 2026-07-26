@@ -56,7 +56,6 @@ export interface IHomeWorkbenchState {
   searchText: string;
   selectedDirectUserId: number | null;
   sending: boolean;
-  resourceUploading: boolean;
   users: IDataListUsers;
   wsStatus: TWebSocketStatus;
 }
@@ -95,7 +94,6 @@ export interface IHomeWorkbenchActions {
   handleSearch: () => Promise<void>;
   handleSelectConversation: (conversationId: number) => void;
   handleSendMessage: () => Promise<void>;
-  handleSendImage: (file: File) => Promise<void>;
   handleRetryMessage: (message: IDataMessage) => Promise<void>;
   handleUpdateGroupProfile: () => Promise<void>;
   handleUpdateMemberRole: (userId: number, role: string) => Promise<void>;

@@ -13,6 +13,7 @@
     "fix": "eslint \"./**/*.{css,tsx,vue,ts,js,html}\" --fix"
   },
   "dependencies": {
+    "@ant-design/cssinjs": "^2.1.2",
     "@ant-design/icons": "^6.3.2",
     "@mt-kit/react-ant-design-extra": "^1.4.1",
     "@mt-kit/react-hooks": "^1.1.1",
