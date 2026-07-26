@@ -245,25 +245,6 @@ function ConversationSidebar({
                   onClick={toggleTheme} />
               </Tooltip>
 
-              <Tooltip title="刷新联系人状态">
-                <Button
-                  aria-label="刷新联系人状态"
-                  className="flow-icon-button"
-                  icon={<ReloadOutlined />}
-                  shape="circle"
-                  onClick={() => {
-                    void actions.handleRefresh();
-                  }} />
-              </Tooltip>
-
-              <Tooltip title="退出登录">
-                <Button
-                  aria-label="退出登录"
-                  className="flow-icon-button"
-                  icon={<LogoutOutlined />}
-                  shape="circle"
-                  onClick={actions.handleLogout} />
-              </Tooltip>
             </Space>
           </div>
 
@@ -295,6 +276,15 @@ function ConversationSidebar({
               {" "}
               在线
             </span>
+
+            <Tooltip title="退出登录">
+              <Button
+                aria-label="退出登录"
+                className="flow-account-logout flow-icon-button"
+                icon={<LogoutOutlined />}
+                shape="circle"
+                onClick={actions.handleLogout} />
+            </Tooltip>
           </div>
 
           <div className="flow-sidebar-status">
@@ -335,9 +325,25 @@ function ConversationSidebar({
                   </Text>
                 </div>
 
-                <Tag className="m-0 rounded-full px-2 font-bold">
-                  {visibleContacts.length}
-                </Tag>
+                <Space size={4}>
+                  <Tag className="m-0 rounded-full px-2 font-bold">
+                    {visibleContacts.length}
+                  </Tag>
+
+                  <Tooltip title="刷新联系人状态">
+                    <Button
+                      aria-label="刷新联系人状态"
+                      className="flow-contact-refresh flow-icon-button"
+                      icon={<ReloadOutlined />}
+                      loading={state.loading}
+                      shape="circle"
+                      size="small"
+                      type="text"
+                      onClick={() => {
+                        void actions.handleRefresh();
+                      }} />
+                  </Tooltip>
+                </Space>
               </div>
 
               {visibleContacts.length > 0 ? (
