@@ -26,6 +26,12 @@ export const links: Route.LinksFunction = () => {
   // 字体链接放在 root，所有路由共享，避免页面级组件重复声明资源。
   return [
     {
+      rel: "icon",
+      href: "/favicon.ico",
+      sizes: "any",
+      type: "image/svg+xml"
+    },
+    {
       rel: "preconnect",
       href: "https://fonts.googleapis.com"
     },
