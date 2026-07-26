@@ -1,7 +1,9 @@
 import {
   ArrowLeftOutlined,
+  InfoCircleOutlined,
   LaptopOutlined,
   PlusOutlined,
+  SearchOutlined,
   TeamOutlined
 } from "@ant-design/icons";
 import {
@@ -15,6 +17,9 @@ import {
 } from "antd";
 import type {
   ReactElement
+} from "react";
+import {
+  useState
 } from "react";
 
 import type {
@@ -38,6 +43,22 @@ interface IWorkspaceHeaderProps {
   viewModel: IHomeWorkbenchViewModel;
 }
 
+const connectionLabels = {
+  closed: "实时已断开",
+  connecting: "正在连接",
+  error: "连接异常",
+  idle: "等待连接",
+  open: "实时在线"
+} as const;
+
+const connectionColors = {
+  closed: "error",
+  connecting: "warning",
+  error: "error",
+  idle: "default",
+  open: "success"
+} as const;
+
 function WorkspaceHeader({
   viewModel
 }: IWorkspaceHeaderProps): ReactElement {
@@ -45,6 +66,11 @@ function WorkspaceHeader({
     actions,
     state
   } = viewModel;
+
+  const [
+    mobileSearchOpen,
+    setMobileSearchOpen
+  ] = useState(false);
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
@@ -64,10 +90,20 @@ function WorkspaceHeader({
     return member.status === "active" && state.presences[member.user_id]?.online;
   }).length || 0;
 
+  const currentGroupMember = state.activeConversation?.members?.find(member => {
+    return member.user_id === state.currentUser?.id && member.status === "active";
+  });
+
+  const canAddGroupMembers = currentGroupMember?.role === "owner" || currentGroupMember?.role === "admin";
+
+  const connectionLabel = connectionLabels[state.wsStatus];
+
+  const connectionColor = connectionColors[state.wsStatus];
+
   const headerDescription = isDirectConversation ? (directPresence?.online ? "在线" : "离线") : `${groupMemberCount} 位成员 · ${groupOnlineCount} 人在线`;
 
   return (
-    <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"}`}>
+    <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"} ${mobileSearchOpen ? "is-mobile-search-open" : ""}`}>
       {/* 只有用户明确选择会话后才展示会话信息，首页保持未打开状态。 */}
       <div className="flow-topbar-title flex min-w-0 items-center gap-3">
         <Button
@@ -121,6 +157,13 @@ function WorkspaceHeader({
       </div>
 
       <Space className="flow-topbar-actions">
+        <Tag
+          aria-label={`实时连接状态：${connectionLabel}`}
+          className={`flow-connection-tag is-${state.wsStatus}`}
+          color={connectionColor}>
+          {connectionLabel}
+        </Tag>
+
         <Tooltip title="创建群聊并选择成员">
           <Button
             aria-label="创建群聊"
@@ -132,12 +175,86 @@ function WorkspaceHeader({
           </Button>
         </Tooltip>
 
+        <Search
+          allowClear
+          aria-label={hasActiveConversation ? "搜索当前流言" : "搜索全部流言"}
+          className="flow-search-input flow-message-search"
+          placeholder={hasActiveConversation ? "搜索当前流言" : "搜索全部流言"}
+          value={state.searchText}
+          onChange={event => {
+            const nextValue = event.target.value;
+
+            actions.setSearchText(nextValue);
+
+            if (!nextValue.trim()) {
+              actions.setSearchResults([]);
+            }
+          }}
+          onSearch={() => {
+            void actions.handleSearch();
+          }} />
+
+        <Tooltip title={mobileSearchOpen ? "收起消息搜索" : "搜索消息"}>
+          <Button
+            aria-expanded={mobileSearchOpen}
+            aria-label={mobileSearchOpen ? "收起消息搜索" : "搜索消息"}
+            className="flow-icon-button flow-mobile-search-button"
+            icon={<SearchOutlined />}
+            shape="circle"
+            onClick={() => {
+              setMobileSearchOpen(current => {
+                return !current;
+              });
+            }} />
+        </Tooltip>
+
+        <Tooltip title="设备管理">
+          <Button
+            aria-label="管理登录设备"
+            className="flow-icon-button flow-device-button"
+            icon={<LaptopOutlined />}
+            shape="circle"
+            onClick={() => {
+              return actions.setDevicesOpen(true);
+            }} />
+        </Tooltip>
+
         {hasActiveConversation && (
+          <Tooltip title="会话详情">
+            <Button
+              aria-label="查看会话详情"
+              className="flow-detail-button flow-icon-button"
+              icon={<InfoCircleOutlined />}
+              shape="circle"
+              onClick={() => {
+                return actions.setDetailsOpen(true);
+              }} />
+          </Tooltip>
+        )}
+
+        {state.activeConversation?.type === "group" && canAddGroupMembers && (
+          <Tooltip title="添加群成员">
+            <Button
+              aria-label="添加群成员"
+              className="flow-icon-button flow-member-button"
+              icon={<PlusOutlined />}
+              shape="circle"
+              onClick={() => {
+                return actions.setMemberModalOpen(true);
+              }} />
+          </Tooltip>
+        )}
+      </Space>
+
+      {mobileSearchOpen && (
+        <div className="flow-mobile-search-tray">
           <Search
             allowClear
-            aria-label="搜索当前流言"
-            className="flow-search-input flow-message-search"
-            placeholder="搜索当前流言"
+            aria-label={hasActiveConversation ? "移动端搜索当前流言" : "移动端搜索全部流言"}
+            autoFocus
+            className="flow-search-input"
+            enterButton
+            placeholder={hasActiveConversation ? "搜索当前会话" : "搜索全部消息"}
             value={state.searchText}
             onChange={event => {
               const nextValue = event.target.value;
@@ -151,32 +268,8 @@ function WorkspaceHeader({
             onSearch={() => {
               void actions.handleSearch();
             }} />
-        )}
-
-        <Tooltip title="设备管理">
-          <Button
-            aria-label="管理登录设备"
-            className="flow-icon-button flow-device-button"
-            icon={<LaptopOutlined />}
-            shape="circle"
-            onClick={() => {
-              return actions.setDevicesOpen(true);
-            }} />
-        </Tooltip>
-
-        {state.activeConversation?.type === "group" && (
-          <Tooltip title="添加群成员">
-            <Button
-              aria-label="添加群成员"
-              className="flow-icon-button flow-member-button"
-              icon={<PlusOutlined />}
-              shape="circle"
-              onClick={() => {
-                return actions.setMemberModalOpen(true);
-              }} />
-          </Tooltip>
-        )}
-      </Space>
+        </div>
+      )}
     </header>
   );
 }

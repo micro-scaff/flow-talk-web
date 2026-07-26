@@ -13,6 +13,7 @@ import {
 } from "react-router";
 
 import {
+  dataExternalLogin,
   dataLogin
 } from "~/api";
 import type {
@@ -30,9 +31,13 @@ import {
 interface ILoginFormHook {
   authResult: IDataLogin | null;
   displayName: string;
+  externalLoading: boolean;
+  externalToken: string;
   form: FormInstance<IParamsLogin>;
   loading: boolean;
+  onExternalLogin: () => Promise<void>;
   onSubmit: (values: IParamsLogin) => Promise<void>;
+  setExternalToken: (token: string) => void;
 }
 
 export function useLoginFormHook(): ILoginFormHook {
@@ -48,6 +53,16 @@ export function useLoginFormHook(): ILoginFormHook {
     loading,
     setLoading
   ] = useState(false);
+
+  const [
+    externalLoading,
+    setExternalLoading
+  ] = useState(false);
+
+  const [
+    externalToken,
+    setExternalToken
+  ] = useState("");
 
   const navigate = useNavigate();
 
@@ -78,12 +93,49 @@ export function useLoginFormHook(): ILoginFormHook {
     }
   };
 
+  const onExternalLogin = async (): Promise<void> => {
+    const accessToken = externalToken.trim();
+
+    if (!accessToken) {
+      message.warning("请输入外部身份令牌");
+
+      return;
+    }
+
+    setExternalLoading(true);
+
+    try {
+
+      // provider 在当前版本固定为 demo；真实 OAuth 接入后应由服务端配置决定，不接受任意用户输入。
+      const response = await dataExternalLogin({
+        access_token: accessToken,
+        provider: "demo"
+      });
+
+      saveSession(response);
+      setAuthResult(response);
+      message.success("外部身份登录成功");
+      navigate("/", {
+        replace: true
+      });
+    } catch {
+
+      // 请求错误由 request 响应拦截器统一提示。
+    } finally {
+      setExternalLoading(false);
+    }
+  };
+
   return {
     authResult,
     displayName,
+    externalLoading,
+    externalToken,
     form,
     loading,
-    onSubmit
+    onExternalLogin,
+    onSubmit,
+    setExternalToken
   };
 }
 

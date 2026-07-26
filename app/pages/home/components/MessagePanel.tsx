@@ -1,4 +1,7 @@
 import {
+  EyeOutlined,
+  PictureOutlined,
+  ReloadOutlined,
   SendOutlined
 } from "@ant-design/icons";
 import {
@@ -7,7 +10,8 @@ import {
   Input,
   Space,
   Spin,
-  Typography
+  Typography,
+  Upload
 } from "antd";
 import type {
   ReactElement
@@ -16,6 +20,10 @@ import {
   useEffect,
   useRef
 } from "react";
+
+import {
+  getApiBaseUrl
+} from "~/utils/api-base";
 
 import type {
   IHomeWorkbenchViewModel
@@ -38,6 +46,20 @@ interface IMessagePanelProps {
   viewModel: IHomeWorkbenchViewModel;
 }
 
+function resolveResourceUrl(resourceUrl?: string): string | undefined {
+  if (!resourceUrl) {
+    return undefined;
+  }
+
+  try {
+
+    // 上传接口返回相对 static 路径时，以 API 地址为基准；完整 CDN URL 则由 URL 原样保留。
+    return new URL(resourceUrl, getApiBaseUrl()).href;
+  } catch {
+    return resourceUrl;
+  }
+}
+
 function MessagePanel({
   viewModel
 }: IMessagePanelProps): ReactElement {
@@ -52,10 +74,18 @@ function MessagePanel({
 
   const messageBottomRef = useRef<HTMLDivElement>(null);
 
+  const skipNextAutoScrollRef = useRef(false);
+
   const latestMessage = state.messages.at(-1);
 
   useEffect(() => {
     if (!hasActiveConversation || state.messageLoading) {
+      return;
+    }
+
+    if (skipNextAutoScrollRef.current) {
+      skipNextAutoScrollRef.current = false;
+
       return;
     }
 
@@ -83,10 +113,26 @@ function MessagePanel({
     state.messages.length
   ]);
 
+  async function handleLoadEarlierMessages(): Promise<void> {
+    const scrollContainer = chatScrollRef.current;
+
+    const previousScrollHeight = scrollContainer?.scrollHeight || 0;
+
+    // 记录插入历史消息前后的高度差，避免分页完成后视口跳到列表顶部或最新消息。
+    skipNextAutoScrollRef.current = true;
+    await actions.handleLoadMoreMessages();
+
+    window.requestAnimationFrame(() => {
+      if (scrollContainer) {
+        scrollContainer.scrollTop += scrollContainer.scrollHeight - previousScrollHeight;
+      }
+    });
+  }
+
   return (
     <div className="flow-chat-panel flex h-full min-w-0 flex-col">
       {/* 搜索结果只展示轻量预览，点击会话或清空后回到正常消息流。 */}
-      {hasActiveConversation && state.searchResults.length > 0 && (
+      {state.searchResults.length > 0 && (
         <div
           aria-live="polite"
           className="flow-search-results border-b px-6 py-3"
@@ -113,18 +159,23 @@ function MessagePanel({
               </Button>
             </div>
 
-            {state.searchResults.slice(0, 3).map(item => {
+            {state.searchResults.slice(0, 5).map(item => {
               return (
-                <Text
+                <button
                   key={item.id}
-                  className="flow-search-result-item block"
-                  ellipsis>
-                  {readMessageText(item)}
+                  className="flow-search-result-item flex w-full items-center justify-between gap-4 text-left"
+                  type="button"
+                  onClick={() => {
+                    return actions.handleOpenSearchResult(item);
+                  }}>
+                  <Text ellipsis>
+                    {readMessageText(item)}
+                  </Text>
 
                   <time>
                     {formatDateTime(item.sent_at)}
                   </time>
-                </Text>
+                </button>
               );
             })}
           </Space>
@@ -142,6 +193,19 @@ function MessagePanel({
               className="flow-message-stack"
               orientation="vertical"
               size={14}>
+              {state.hasMoreMessages && (
+                <Button
+                  className="self-center"
+                  loading={state.loadingMoreMessages}
+                  size="small"
+                  type="text"
+                  onClick={() => {
+                    return void handleLoadEarlierMessages();
+                  }}>
+                  加载更早的流言
+                </Button>
+              )}
+
               {state.messages.length === 0 && (
                 <div className="flow-chat-empty">
                   <div className="flow-empty-bubble-stack">
@@ -196,10 +260,47 @@ function MessagePanel({
                       </Text>
 
                       <div className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${item.status === "failed" ? "is-failed" : ""}`}>
-                        <div className="whitespace-pre-wrap break-words text-sm leading-6">
-                          {readMessageText(item)}
-                        </div>
+                        {item.message_type === "image" && item.content?.url ? (
+                          <img
+                            alt={item.content.name || "消息图片"}
+                            className="flow-message-image"
+                            loading="lazy"
+                            src={resolveResourceUrl(item.content.url)} />
+                        ) : (
+                          <div className="whitespace-pre-wrap break-words text-sm leading-6">
+                            {readMessageText(item)}
+                          </div>
+                        )}
                       </div>
+
+                      <Space size={4}>
+                        {item.id > 0 && (
+                          <Button
+                            aria-label="查看消息回执"
+                            className="flow-message-receipt-button"
+                            icon={<EyeOutlined />}
+                            size="small"
+                            type="text"
+                            onClick={() => {
+                              return void actions.handleOpenMessageReceipts(item.id);
+                            }}>
+                            回执
+                          </Button>
+                        )}
+
+                        {item.status === "failed" && (
+                          <Button
+                            danger
+                            icon={<ReloadOutlined />}
+                            size="small"
+                            type="text"
+                            onClick={() => {
+                              return void actions.handleRetryMessage(item);
+                            }}>
+                            重试
+                          </Button>
+                        )}
+                      </Space>
                     </div>
 
                     {isMine && messageAvatar}
@@ -251,6 +352,23 @@ function MessagePanel({
       {hasActiveConversation && (
         <footer className="flow-composer">
           <div className="flow-composer-inner">
+            <Upload
+              accept="image/*"
+              beforeUpload={file => {
+                void actions.handleSendImage(file);
+
+                return Upload.LIST_IGNORE;
+              }}
+              maxCount={1}
+              showUploadList={false}>
+              <Button
+                aria-label="发送图片"
+                className="flow-composer-media-button flow-icon-button"
+                icon={<PictureOutlined />}
+                loading={state.resourceUploading}
+                shape="circle" />
+            </Upload>
+
             <TextArea
               aria-label="流言内容"
               autoSize={{
@@ -259,7 +377,7 @@ function MessagePanel({
               }}
               className="flow-message-input"
               enterKeyHint="send"
-              placeholder="说点什么，Enter 发送，Shift + Enter 换行"
+              placeholder="说点什么…"
               value={state.draftText}
               onChange={event => {
                 return actions.setDraftText(event.target.value);

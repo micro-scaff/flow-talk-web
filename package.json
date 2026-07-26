@@ -1,7 +1,10 @@
 {
-  "name": "demo",
+  "name": "flow-talk-web",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.23.0"
+  },
   "scripts": {
     "build": "react-router build",
     "dev": "react-router dev",

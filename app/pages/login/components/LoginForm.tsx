@@ -1,9 +1,11 @@
 import {
+  ApiOutlined,
   LoginOutlined,
   UserAddOutlined
 } from "@ant-design/icons";
 import {
   Button,
+  Divider,
   Form,
   Input,
   Typography
@@ -71,6 +73,36 @@ export function LoginForm({
           登录
         </Button>
       </Form>
+
+      <Divider plain>
+        外部身份
+      </Divider>
+
+      <div className="grid gap-3">
+        <Input.Password
+          aria-label="外部身份令牌"
+          autoComplete="off"
+          placeholder="输入 demo provider 的身份令牌"
+          size="large"
+          value={viewModel.externalToken}
+          onChange={event => {
+            return viewModel.setExternalToken(event.target.value);
+          }}
+          onPressEnter={() => {
+            return void viewModel.onExternalLogin();
+          }} />
+
+        <Button
+          block
+          icon={<ApiOutlined />}
+          loading={viewModel.externalLoading}
+          size="large"
+          onClick={() => {
+            return void viewModel.onExternalLogin();
+          }}>
+          使用外部身份登录
+        </Button>
+      </div>
 
       {viewModel.authResult?.token && (
         <div className="auth-success">

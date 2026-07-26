@@ -18,6 +18,7 @@ import type {
 } from "../type";
 import {
   formatDateTime,
+  getConversationDisplayTitle,
   getUserName
 } from "../utils";
 
@@ -37,8 +38,25 @@ function ConversationDetailPanel({
     state
   } = viewModel;
 
+  // 前端权限展示严格跟随后端 owner/admin/member 矩阵，减少无权限操作产生的无效请求。
+  const currentMember = state.activeConversation?.members?.find(member => {
+    return member.user_id === state.currentUser?.id && member.status === "active";
+  });
+
+  const canManageGroup = currentMember?.role === "owner" || currentMember?.role === "admin";
+
+  const canChangeMemberRole = currentMember?.role === "owner";
+
+  const detailTitle = state.activeConversation ? getConversationDisplayTitle(state.activeConversation, state.currentUser?.id, state.users) : state.activeTitle;
+
+  const activeConversationSummary = state.conversations.find(conversation => {
+    return conversation.id === state.activeConversationId;
+  });
+
+  const lastMessageAt = activeConversationSummary?.last_message_at || state.activeConversation?.last_message_at;
+
   return (
-    <aside className="hidden border-l border-[#dadde1] bg-white p-5 xl:block">
+    <aside className="flow-conversation-detail border-l border-[#dadde1] bg-white p-5">
       <Space
         className="w-full"
         orientation="vertical"
@@ -55,11 +73,11 @@ function ConversationDetailPanel({
                 className="bg-[#1877f2]"
                 size={56}
                 src={state.activeConversation.avatar_url || undefined}>
-                {state.activeTitle.slice(0, 1)}
+                {detailTitle.slice(0, 1)}
               </Avatar>
 
               <Text strong>
-                {state.activeTitle}
+                {detailTitle}
               </Text>
 
               <Text className="text-[#65676b]">
@@ -69,7 +87,7 @@ function ConversationDetailPanel({
 
               <Text className="text-[#65676b]">
                 最后消息：
-                {formatDateTime(state.activeConversation.last_message_at)}
+                {formatDateTime(lastMessageAt)}
               </Text>
 
               {state.activeConversation.type === "group" && (
@@ -78,18 +96,27 @@ function ConversationDetailPanel({
                   orientation="vertical">
                   <Button
                     block
+                    disabled={!canManageGroup}
                     onClick={actions.handleOpenGroupProfile}>
-                    编辑群资料
+                    {canManageGroup ? "编辑群资料" : "仅群主或管理员可编辑"}
                   </Button>
 
-                  <Button
-                    block
-                    danger
-                    onClick={() => {
-                      return void actions.handleLeaveGroup();
-                    }}>
-                    退出群聊
-                  </Button>
+                  {currentMember && currentMember.role !== "owner" && (
+                    <Button
+                      block
+                      danger
+                      onClick={() => {
+                        return void actions.handleLeaveGroup();
+                      }}>
+                      退出群聊
+                    </Button>
+                  )}
+
+                  {currentMember?.role === "owner" && (
+                    <Text className="text-xs text-[#8a8d91]">
+                      群主暂不能退出群聊，请保留至少一位负责人。
+                    </Text>
+                  )}
                 </Space>
               )}
             </Space>
@@ -142,34 +169,38 @@ function ConversationDetailPanel({
                     {member.status}
                   </Tag>
 
-                  {state.activeConversation?.type === "group" && member.user_id !== state.currentUser?.id && (
+                  {state.activeConversation?.type === "group" && member.status === "active" && member.user_id !== state.currentUser?.id && canManageGroup && member.role !== "owner" && (
                     <Space>
-                      <Select
-                        size="small"
-                        value={member.role}
-                        options={[
-                          {
-                            label: "管理员",
-                            value: "admin"
-                          },
-                          {
-                            label: "成员",
-                            value: "member"
-                          }
-                        ]}
-                        onChange={role => {
-                          return void actions.handleUpdateMemberRole(member.user_id, role);
-                        }} />
+                      {canChangeMemberRole && (
+                        <Select
+                          size="small"
+                          value={member.role}
+                          options={[
+                            {
+                              label: "管理员",
+                              value: "admin"
+                            },
+                            {
+                              label: "成员",
+                              value: "member"
+                            }
+                          ]}
+                          onChange={role => {
+                            return void actions.handleUpdateMemberRole(member.user_id, role);
+                          }} />
+                      )}
 
-                      <Button
-                        danger
-                        size="small"
-                        type="text"
-                        onClick={() => {
-                          return void actions.handleRemoveMember(member.user_id);
-                        }}>
-                        移除
-                      </Button>
+                      {(currentMember?.role === "owner" || member.role === "member") && (
+                        <Button
+                          danger
+                          size="small"
+                          type="text"
+                          onClick={() => {
+                            return void actions.handleRemoveMember(member.user_id);
+                          }}>
+                          移除
+                        </Button>
+                      )}
                     </Space>
                   )}
                 </div>

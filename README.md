@@ -1,106 +1,70 @@
 # flow-talk-web
 
-Flow Talk 前端项目，面向即时通讯场景。当前阶段先完成账号注册、账号登录、主题切换和认证接口联调，为后续 IM 会话、联系人和消息模块打基础。
+Flow Talk 的 Web 客户端，与 `flow-talk-server` 的 v1-v7 接口和 WebSocket 协议配套使用。
+
+## 已实现能力
+
+- 账号注册、账号密码登录和 `demo` provider 外部身份登录
+- 联系人列表、单聊和群聊创建
+- 会话列表、未读数、在线状态和断线重连后的状态校准
+- 文本与图片消息、乐观发送、ACK 超时 HTTP 兜底和失败重试
+- 游标分页加载历史消息、会话内或全局消息搜索
+- 会话已读、单条消息回执查看及已读/未读调整
+- 群资料、成员、管理员角色和退出群聊管理
+- 设备上报、设备列表与删除
+
+接口与协议的完整说明见 [后端总览](../flow-talk-server/docs/OVERVIEW.md) 和 [OpenAPI](../flow-talk-server/docs/openapi.json)。
 
 ## 技术栈
 
 - React 19
 - React Router 8 Framework Mode
-- TypeScript
-- Vite
-- Ant Design
-- `@mt-kit/request-axios`
-- `@mt-kit/eslint-config`
+- TypeScript 5
+- Vite 8
+- Ant Design 6
+- Tailwind CSS 4
 
-## 接口来源
+## 本地配置
 
-后端接口文档来自：
+需要 Node.js 22.23.0 或更高版本。
 
-```txt
-/Users/liyong/Desktop/code/flow-talk-server/docs/openapi.json
+复制环境变量示例并按需修改：
+
+```bash
+cp .env.example .env
 ```
 
-当前已接入接口：
+默认后端地址为 `http://127.0.0.1:8080`，也可以通过 `VITE_API_BASE_URL` 指定。WebSocket 地址会基于该地址自动转换。
 
-- `POST /api/auth/login`
-- `POST /api/auth/register`
-
-本地开发接口地址：
-
-```txt
-http://127.0.0.1:8080
-```
-
-## 本地开发
-
-安装依赖：
+## 启动与校验
 
 ```bash
 npm install
-```
-
-启动开发服务：
-
-```bash
 npm run dev
 ```
 
-默认访问：
-
-```txt
-http://localhost:5173/
-```
-
-## 常用命令
-
-类型检查：
+常用校验命令：
 
 ```bash
 npm run typecheck
-```
-
-代码自动修复：
-
-```bash
-npm run fix
-```
-
-生产构建：
-
-```bash
 npm run build
 ```
 
-## 当前页面
+## 主要路由
 
-- `/`：跳转到登录页
-- `/login`：登录
+- `/login`：账号或外部身份登录
 - `/register`：注册
+- `/`：联系人和会话工作台
+- `/conversations/:conversationId`：指定会话
 
-## 代码结构
+## 目录结构
 
-```txt
+```text
 app/
-  api/                  具体业务接口
+  api/                  与 OpenAPI 对齐的接口封装
   components/           公共组件
   hooks/                跨模块复用 hooks
-  model/                共享数据模型
-  pages/                页面与页面私有组件
-  request/              请求公共实例、拦截器和 token 处理
+  pages/                页面、页面组件及页面状态
+  request/              HTTP 客户端、鉴权与错误处理
+  utils/                会话、设备和地址等通用工具
 ```
-
-模块私有 hooks 放在对应页面目录下，例如：
-
-```txt
-app/pages/login/hooks/
-app/pages/register/hooks/
-```
-
-只有跨模块复用的 hooks 才放在 `app/hooks/`。
-
-项目按 MVVM 思路拆分：
-
-- Model：定义接口字段和业务数据结构
-- View：只负责页面和组件展示
-- Hooks：页面模块 hooks 管理表单和跳转，公共 hooks 管理跨模块状态
-- Request/API：封装 HTTP 客户端、认证接口和本地会话持久化

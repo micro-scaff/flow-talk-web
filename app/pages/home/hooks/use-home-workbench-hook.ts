@@ -27,7 +27,10 @@ import {
   dataLeaveGroup,
   dataListUsers,
   dataMarkConversationRead,
+  dataMarkMessageRead,
+  dataMarkMessageUnread,
   dataMessageList,
+  dataMessageReceipts,
   dataMessageSearch,
   dataRemoveGroupMember,
   dataSendMessage,
@@ -43,6 +46,7 @@ import type {
   IDataGetCurrentUser,
   IDataListUsers,
   IDataMessage,
+  IDataMessageReceipt,
   IDataPresence
 } from "~/api";
 import {
@@ -94,6 +98,58 @@ interface IPendingMessage {
   conversationId: number;
   messageType: IDataMessage["message_type"];
   timeoutId?: number;
+}
+
+// 消息接口按倒序分页返回，视图层统一使用升序，避免多个调用点各自维护排序规则。
+function sortMessagesById(messages: IDataMessage[]): IDataMessage[] {
+  return [
+    ...messages
+  // eslint-disable-next-line unicorn/no-array-sort
+  ].sort((source, target) => {
+    return source.id - target.id;
+  });
+}
+
+// 使用 Map 合并分页数据，把原先逐项 findIndex 的 O(n²) 去重降为 O(n)。
+function mergeMessagePage(currentMessages: IDataMessage[], pageItems: IDataMessage[]): IDataMessage[] {
+  const messagesById = new Map<number, IDataMessage>();
+
+  for (const messageItem of [
+    ...pageItems,
+    ...currentMessages
+  ]) {
+    if (!messagesById.has(messageItem.id)) {
+      messagesById.set(messageItem.id, messageItem);
+    }
+  }
+
+  return sortMessagesById([
+    ...messagesById.values()
+  ]);
+}
+
+// 单条回执是辅助状态，只为尚未越过会话已读游标的新消息写入，避免每次打开会话重复更新整页回执。
+function markIncomingMessagesRead(messages: IDataMessage[], currentUserId?: number, lastReadMessageId = 0): void {
+  const messageIds = messages.
+      filter(messageItem => {
+        return messageItem.id > lastReadMessageId && messageItem.sender_id !== currentUserId;
+      }).
+      map(messageItem => {
+        return messageItem.id;
+      });
+
+  if (messageIds.length === 0) {
+    return;
+  }
+
+  void Promise.all(messageIds.map(messageId => {
+    return dataMarkMessageRead({
+      message_id: messageId
+    });
+  })).catch(() => {
+
+    // 回执失败不阻断消息阅读，请求层已经负责用户可见的错误提示。
+  });
 }
 
 function pickWsPresence(payload: unknown): IDataPresence | null {
@@ -171,6 +227,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const refreshConversationsTimerRef = useRef<null | number>(null);
 
+  const nextBeforeMessageIdRef = useRef<number | null>(null);
+
+  const hasOpenedWebSocketRef = useRef(false);
+
+  const activeConversationRequestRef = useRef(0);
+
+  const reconcileInFlightRef = useRef<Promise<void> | null>(null);
+
   const [
     currentUser,
     setCurrentUser
@@ -242,6 +306,16 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState(false);
 
   const [
+    loadingMoreMessages,
+    setLoadingMoreMessages
+  ] = useState(false);
+
+  const [
+    hasMoreMessages,
+    setHasMoreMessages
+  ] = useState(false);
+
+  const [
     sending,
     setSending
   ] = useState(false);
@@ -249,6 +323,26 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const [
     groupAvatarUploading,
     setGroupAvatarUploading
+  ] = useState(false);
+
+  const [
+    resourceUploading,
+    setResourceUploading
+  ] = useState(false);
+
+  const [
+    messageReceipts,
+    setMessageReceipts
+  ] = useState<IDataMessageReceipt[]>([]);
+
+  const [
+    selectedReceiptMessageId,
+    setSelectedReceiptMessageId
+  ] = useState<number | null>(null);
+
+  const [
+    receiptsLoading,
+    setReceiptsLoading
   ] = useState(false);
 
   const [
@@ -274,6 +368,16 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const [
     devicesOpen,
     setDevicesOpen
+  ] = useState(false);
+
+  const [
+    detailsOpen,
+    setDetailsOpen
+  ] = useState(false);
+
+  const [
+    receiptsOpen,
+    setReceiptsOpen
   ] = useState(false);
 
   const [
@@ -331,6 +435,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const loadConversations = useCallback(async (): Promise<IDataConversationListItem[]> => {
     const conversationList = await dataConversationList();
 
+    // 同步更新 ref，保证紧接着发生的路由加载或 WebSocket 事件读取到最新快照。
+    conversationsRef.current = conversationList;
     setConversations(conversationList);
 
     return conversationList;
@@ -548,6 +654,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const loadActiveConversation = useCallback(async (conversationId: number): Promise<void> => {
+    const requestSequence = activeConversationRequestRef.current + 1;
+
+    activeConversationRequestRef.current = requestSequence;
     setMessageLoading(true);
 
     try {
@@ -564,15 +673,25 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         })
       ]);
 
-      const nextMessages = [
-        ...messagePage.items
-      // eslint-disable-next-line unicorn/no-array-sort
-      ].sort((a, b) => {
-        return a.id - b.id;
+      if (activeConversationRequestRef.current !== requestSequence) {
+        return;
+      }
+
+      const nextMessages = sortMessagesById(messagePage.items);
+
+      const conversationSummary = conversationsRef.current.find(conversation => {
+        return conversation.id === conversationId;
       });
 
-      setActiveConversation(detail);
+      setActiveConversation({
+        ...conversationSummary,
+        ...detail
+      });
       setMessages(nextMessages);
+      setHasMoreMessages(messagePage.has_more);
+      nextBeforeMessageIdRef.current = messagePage.next_before_id || nextMessages.at(0)?.id || null;
+
+      markIncomingMessagesRead(nextMessages, currentUser?.id, conversationSummary?.last_read_message_id);
 
       const lastMessageId = nextMessages.at(-1)?.id;
 
@@ -593,11 +712,49 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
             });
       }
     } catch (error) {
-      reportError(error, "会话详情或消息加载失败");
+      if (activeConversationRequestRef.current === requestSequence) {
+        reportError(error, "会话详情或消息加载失败");
+      }
     } finally {
-      setMessageLoading(false);
+      if (activeConversationRequestRef.current === requestSequence) {
+        setMessageLoading(false);
+      }
     }
   }, [
+    currentUser?.id,
+    reportError
+  ]);
+
+  const handleLoadMoreMessages = useCallback(async (): Promise<void> => {
+    const beforeId = nextBeforeMessageIdRef.current;
+
+    if (!activeConversationId || !beforeId || !hasMoreMessages || loadingMoreMessages) {
+      return;
+    }
+
+    setLoadingMoreMessages(true);
+
+    try {
+      const messagePage = await dataMessageList({
+        before_id: beforeId,
+        conversation_id: activeConversationId,
+        limit: 30
+      });
+
+      setMessages(currentMessages => {
+        return mergeMessagePage(currentMessages, messagePage.items);
+      });
+      setHasMoreMessages(messagePage.has_more);
+      nextBeforeMessageIdRef.current = messagePage.next_before_id || null;
+    } catch (error) {
+      reportError(error, "加载更早消息失败");
+    } finally {
+      setLoadingMoreMessages(false);
+    }
+  }, [
+    activeConversationId,
+    hasMoreMessages,
+    loadingMoreMessages,
     reportError
   ]);
 
@@ -898,10 +1055,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     reportError
   ]);
 
-  const handleSendMessage = useCallback(async (): Promise<void> => {
-    const trimmedText = draftText.trim();
-
-    if (!activeConversationId || !trimmedText || !currentUser?.id) {
+  const sendOptimisticMessage = useCallback(async (
+      messageType: IDataMessage["message_type"],
+      content: IDataMessage["content"]
+  ): Promise<void> => {
+    if (!activeConversationId || !currentUser?.id || !messageType || !content) {
       return;
     }
 
@@ -909,22 +1067,18 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     const requestId = `message-${clientMsgId}`;
 
-    const content = {
-      text: trimmedText
-    };
-
     const pendingMessage: IPendingMessage = {
       clientMsgId,
       content,
       conversationId: activeConversationId,
-      messageType: "text"
+      messageType
     };
 
     const localMessage = createLocalSendingMessage({
       clientMsgId,
       content,
       conversationId: activeConversationId,
-      messageType: "text",
+      messageType,
       senderId: currentUser.id
     });
 
@@ -932,14 +1086,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setMessages(currentMessages => {
       return mergeMessage(currentMessages, localMessage);
     });
-    setDraftText("");
-
     const sentByWebSocket = sendJson({
       payload: {
         client_msg_id: clientMsgId,
         content,
         conversation_id: activeConversationId,
-        message_type: "text"
+        message_type: messageType
       },
       request_id: requestId,
       type: "message.send"
@@ -965,9 +1117,79 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     activeConversationId,
     clearPendingMessage,
     currentUser?.id,
-    draftText,
     sendMessageByHttp,
     sendJson
+  ]);
+
+  const handleSendMessage = useCallback(async (): Promise<void> => {
+    const trimmedText = draftText.trim();
+
+    if (!trimmedText) {
+      return;
+    }
+
+    setDraftText("");
+    await sendOptimisticMessage("text", {
+      text: trimmedText
+    });
+  }, [
+    draftText,
+    sendOptimisticMessage
+  ]);
+
+  const handleSendImage = useCallback(async (file: File): Promise<void> => {
+    if (!file.type.startsWith("image/")) {
+      message.warning("请选择图片文件");
+
+      return;
+    }
+
+    setResourceUploading(true);
+
+    try {
+      const resource = await dataUploadResource({
+        file,
+        type: "image"
+      });
+
+      await sendOptimisticMessage("image", {
+        name: file.name,
+        size: file.size,
+        url: resource.url
+      });
+    } catch (error) {
+      reportError(error, "图片发送失败");
+    } finally {
+      setResourceUploading(false);
+    }
+  }, [
+    message,
+    reportError,
+    sendOptimisticMessage
+  ]);
+
+  const handleRetryMessage = useCallback(async (messageItem: IDataMessage): Promise<void> => {
+    if (!messageItem.client_msg_id || messageItem.status !== "failed") {
+      return;
+    }
+
+    setMessages(currentMessages => {
+      return currentMessages.map(item => {
+        return item.client_msg_id === messageItem.client_msg_id ? {
+          ...item,
+          status: "sending"
+        } : item;
+      });
+    });
+
+    await sendMessageByHttp({
+      clientMsgId: messageItem.client_msg_id,
+      content: messageItem.content || {},
+      conversationId: messageItem.conversation_id,
+      messageType: messageItem.message_type || "text"
+    });
+  }, [
+    sendMessageByHttp
   ]);
 
   const handleSearch = useCallback(async (): Promise<void> => {
@@ -999,6 +1221,69 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     searchText
   ]);
 
+  const handleOpenSearchResult = useCallback((messageItem: IDataMessage): void => {
+    setSearchResults([]);
+    setSearchText("");
+    handleSelectConversation(messageItem.conversation_id);
+  }, [
+    handleSelectConversation
+  ]);
+
+  const loadMessageReceipts = useCallback(async (messageId: number): Promise<void> => {
+    setReceiptsLoading(true);
+
+    try {
+      const receipts = await dataMessageReceipts({
+        message_id: messageId
+      });
+
+      setMessageReceipts(receipts);
+    } catch (error) {
+      reportError(error, "消息回执加载失败");
+    } finally {
+      setReceiptsLoading(false);
+    }
+  }, [
+    reportError
+  ]);
+
+  const handleOpenMessageReceipts = useCallback(async (messageId: number): Promise<void> => {
+    setSelectedReceiptMessageId(messageId);
+    setMessageReceipts([]);
+    setReceiptsOpen(true);
+    await loadMessageReceipts(messageId);
+  }, [
+    loadMessageReceipts
+  ]);
+
+  const handleMarkSelectedReceipt = useCallback(async (status: "read" | "unread"): Promise<void> => {
+    if (!selectedReceiptMessageId) {
+      return;
+    }
+
+    try {
+      if (status === "read") {
+        await dataMarkMessageRead({
+          message_id: selectedReceiptMessageId
+        });
+      } else {
+        await dataMarkMessageUnread({
+          message_id: selectedReceiptMessageId
+        });
+      }
+
+      await loadMessageReceipts(selectedReceiptMessageId);
+      message.success(status === "read" ? "已标记为已读" : "已标记为未读");
+    } catch (error) {
+      reportError(error, "更新消息回执失败");
+    }
+  }, [
+    loadMessageReceipts,
+    message,
+    reportError,
+    selectedReceiptMessageId
+  ]);
+
   const handleUpsertDevice = useCallback(async (): Promise<void> => {
     await upsertCurrentDevice(true);
   }, [
@@ -1027,10 +1312,86 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     navigate
   ]);
 
+  const reconcileRealtimeSnapshots = useCallback((): Promise<void> => {
+
+    // 重连和 visibilitychange 可能同时触发；共享同一个任务可以避免重复拉取整套 HTTP 快照。
+    if (reconcileInFlightRef.current) {
+      return reconcileInFlightRef.current;
+    }
+
+    const reconcileTask = (async (): Promise<void> => {
+      try {
+        const [
+          ,
+          userList
+        ] = await Promise.all([
+          loadConversations(),
+          dataListUsers()
+        ]);
+
+        setUsers(userList);
+        await loadPresence(userList);
+
+        if (activeConversationId) {
+          await loadActiveConversation(activeConversationId);
+        }
+      } catch (error) {
+        reportError(error, "实时状态校准失败");
+      }
+    })();
+
+    reconcileInFlightRef.current = reconcileTask;
+
+    return reconcileTask.finally(() => {
+      if (reconcileInFlightRef.current === reconcileTask) {
+        reconcileInFlightRef.current = null;
+      }
+    });
+  }, [
+    activeConversationId,
+    loadActiveConversation,
+    loadConversations,
+    loadPresence,
+    reportError
+  ]);
+
   useEffect(() => {
     void loadInitialData();
   }, [
     loadInitialData
+  ]);
+
+  useEffect(() => {
+    if (wsStatus !== "open") {
+      return;
+    }
+
+    if (!hasOpenedWebSocketRef.current) {
+      hasOpenedWebSocketRef.current = true;
+
+      return;
+    }
+
+    void reconcileRealtimeSnapshots();
+  }, [
+    reconcileRealtimeSnapshots,
+    wsStatus
+  ]);
+
+  useEffect(() => {
+    const handleVisibilityChange = (): void => {
+      if (document.visibilityState === "visible") {
+        void reconcileRealtimeSnapshots();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [
+    reconcileRealtimeSnapshots
   ]);
 
   useEffect(() => {
@@ -1051,8 +1412,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     if (activeConversationId) {
       void loadActiveConversation(activeConversationId);
     } else {
+      activeConversationRequestRef.current += 1;
       setActiveConversation(null);
+      setDetailsOpen(false);
       setMessages([]);
+      setHasMoreMessages(false);
+      nextBeforeMessageIdRef.current = null;
     }
   }, [
     activeConversationId,
@@ -1158,6 +1523,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       });
 
       if (realtimeMessage.id > 0 && realtimeMessage.sender_id !== currentUser?.id) {
+        markIncomingMessagesRead([
+          realtimeMessage
+        ], currentUser?.id);
+
         void dataMarkConversationRead({
           conversation_id: realtimeMessage.conversation_id,
           last_read_message_id: realtimeMessage.id
@@ -1226,12 +1595,18 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     draftText,
     errorNotice,
     groupAvatarUploading,
+    hasMoreMessages,
     loading,
+    loadingMoreMessages,
+    messageReceipts,
     messageLoading,
     messages,
     presences,
+    receiptsLoading,
+    resourceUploading,
     searchResults,
     searchText,
+    selectedReceiptMessageId,
     selectedDirectUserId,
     sending,
     users,
@@ -1239,11 +1614,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   };
 
   const dialogs: IHomeWorkbenchDialogs = {
+    detailsOpen,
     devicesOpen,
     directModalOpen,
     groupModalOpen,
     memberModalOpen,
-    profileModalOpen
+    profileModalOpen,
+    receiptsOpen
   };
 
   const forms: IHomeWorkbenchForms = {
@@ -1263,24 +1640,32 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleCreateGroup,
     handleDeleteDevice,
     handleLeaveGroup,
+    handleLoadMoreMessages,
+    handleMarkSelectedReceipt,
     handleOpenGroupCreate,
+    handleOpenMessageReceipts,
+    handleOpenSearchResult,
     handleLogout,
     handleOpenGroupProfile,
     handleRefresh,
     handleRemoveMember,
     handleSearch,
     handleSelectConversation,
+    handleSendImage,
     handleSendMessage,
+    handleRetryMessage,
     handleUpdateGroupProfile,
     handleUpdateMemberRole,
     handleUploadGroupAvatar,
     handleUpsertDevice,
     setDevicesOpen,
+    setDetailsOpen,
     setDirectModalOpen,
     setDraftText,
     setGroupModalOpen,
     setMemberModalOpen,
     setProfileModalOpen,
+    setReceiptsOpen,
     setSearchResults,
     setSearchText,
     setSelectedDirectUserId

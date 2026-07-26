@@ -13,6 +13,9 @@ import {
   ConversationSidebar
 } from "./ConversationSidebar";
 import {
+  ConversationDetailPanel
+} from "./ConversationDetailPanel";
+import {
   MessagePanel
 } from "./MessagePanel";
 import {
@@ -59,8 +62,12 @@ function HomeWorkbench({
           <WorkspaceHeader
             viewModel={viewModel} />
 
-          <section className="flow-workbench-main min-h-0 flex-1">
+          <section className={`flow-workbench-main min-h-0 flex-1 ${state.activeConversationId ? "has-detail-panel" : ""}`}>
             <MessagePanel viewModel={viewModel} />
+
+            {state.activeConversationId && (
+              <ConversationDetailPanel viewModel={viewModel} />
+            )}
           </section>
         </Content>
       </Layout>

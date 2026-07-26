@@ -15,6 +15,9 @@ import {
   Modal,
   Select,
   Space,
+  Spin,
+  Tag,
+  Typography,
   Upload
 } from "antd";
 import type {
@@ -28,8 +31,28 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  formatDateTime
+  formatDateTime,
+  getUserName
 } from "../utils";
+import {
+  ConversationDetailPanel
+} from "./ConversationDetailPanel";
+
+const {
+  Text
+} = Typography;
+
+const receiptStatusLabels: Record<string, string> = {
+  delivered: "已送达",
+  read: "已读",
+  unread: "未读"
+};
+
+const receiptStatusColors: Record<string, string> = {
+  delivered: "processing",
+  read: "success",
+  unread: "default"
+};
 
 interface IWorkspaceDialogsProps {
   viewModel: IHomeWorkbenchViewModel;
@@ -49,6 +72,16 @@ function WorkspaceDialogs({
   const groupAvatarUrl = Form.useWatch("avatarUrl", forms.groupForm);
 
   const profileAvatarUrl = Form.useWatch("avatarUrl", forms.profileForm);
+
+  const activeMemberIds = new Set(state.activeConversation?.members?.filter(member => {
+    return member.status === "active";
+  }).map(member => {
+    return member.user_id;
+  }) || []);
+
+  const addableUserOptions = userOptions.filter(option => {
+    return !activeMemberIds.has(option.value);
+  });
 
   function getAvatarUploadProps(target: "create" | "profile"): UploadProps {
     return {
@@ -178,7 +211,7 @@ function WorkspaceDialogs({
             ]}>
             <Select
               mode="multiple"
-              options={userOptions}
+              options={addableUserOptions}
               placeholder="选择要添加的成员" />
           </Form.Item>
         </Form>
@@ -235,6 +268,90 @@ function WorkspaceDialogs({
           </Form.Item>
         </Form>
       </Modal>
+
+      <Drawer
+        open={dialogs.detailsOpen}
+        size={420}
+        title="会话详情"
+        onClose={() => {
+          return actions.setDetailsOpen(false);
+        }}>
+        <ConversationDetailPanel viewModel={viewModel} />
+      </Drawer>
+
+      <Drawer
+        open={dialogs.receiptsOpen}
+        size={420}
+        title="消息回执"
+        onClose={() => {
+          return actions.setReceiptsOpen(false);
+        }}>
+        <Spin spinning={state.receiptsLoading}>
+          <Space
+            className="w-full"
+            orientation="vertical"
+            size={16}>
+            <Text className="flow-muted-text">
+              可查看成员主动写入的已读或未读状态，也可以调整自己的状态。
+            </Text>
+
+            <Space>
+              <Button
+                type="primary"
+                onClick={() => {
+                  return void actions.handleMarkSelectedReceipt("read");
+                }}>
+                标记我已读
+              </Button>
+
+              <Button
+                onClick={() => {
+                  return void actions.handleMarkSelectedReceipt("unread");
+                }}>
+                标记我未读
+              </Button>
+            </Space>
+
+            <div className="grid w-full gap-2">
+              {state.messageReceipts.map(receipt => {
+                const user = state.users.find(item => {
+                  return item.id === receipt.user_id;
+                });
+
+                const statusLabel = receiptStatusLabels[receipt.status] || receipt.status;
+
+                return (
+                  <div
+                    key={receipt.user_id}
+                    className="flow-device-row flex items-center gap-3 rounded-lg border p-3">
+                    <Avatar>
+                      {getUserName(user).slice(0, 1)}
+                    </Avatar>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="font-bold">
+                        {getUserName(user)}
+                      </div>
+
+                      <div className="flow-muted-text mt-1 text-xs">
+                        {formatDateTime(receipt.updated_at)}
+                      </div>
+                    </div>
+
+                    <Tag color={receiptStatusColors[receipt.status] || "default"}>
+                      {statusLabel}
+                    </Tag>
+                  </div>
+                );
+              })}
+
+              {state.messageReceipts.length === 0 && !state.receiptsLoading && (
+                <Empty description="暂无成员回执" />
+              )}
+            </div>
+          </Space>
+        </Spin>
+      </Drawer>
 
       <Drawer
         open={dialogs.devicesOpen}

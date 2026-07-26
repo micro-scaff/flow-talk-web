@@ -287,6 +287,13 @@ function ConversationSidebar({
                 {state.currentUser?.username ? `@${state.currentUser.username}` : `ID ${state.currentUser?.id || "-"}`}
               </Text>
             </div>
+
+            <span className="flow-user-mobile-status">
+              <i />
+              {onlineContactCount}
+              {" "}
+              在线
+            </span>
           </div>
 
           <div className="flow-sidebar-status">
