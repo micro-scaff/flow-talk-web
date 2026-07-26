@@ -1,5 +1,4 @@
 import {
-  EyeOutlined,
   PictureOutlined,
   ReloadOutlined,
   SendOutlined
@@ -255,34 +254,18 @@ function MessagePanel({
                         )}
                       </div>
 
-                      <Space size={4}>
-                        {item.id > 0 && (
-                          <Button
-                            aria-label="查看消息回执"
-                            className="flow-message-receipt-button"
-                            icon={<EyeOutlined />}
-                            size="small"
-                            type="text"
-                            onClick={() => {
-                              return void actions.handleOpenMessageReceipts(item.id);
-                            }}>
-                            回执
-                          </Button>
-                        )}
-
-                        {item.status === "failed" && (
-                          <Button
-                            danger
-                            icon={<ReloadOutlined />}
-                            size="small"
-                            type="text"
-                            onClick={() => {
-                              return void actions.handleRetryMessage(item);
-                            }}>
-                            重试
-                          </Button>
-                        )}
-                      </Space>
+                      {item.status === "failed" && (
+                        <Button
+                          danger
+                          icon={<ReloadOutlined />}
+                          size="small"
+                          type="text"
+                          onClick={() => {
+                            return void actions.handleRetryMessage(item);
+                          }}>
+                          重试
+                        </Button>
+                      )}
                     </div>
 
                     {isMine && messageAvatar}

@@ -9,7 +9,6 @@ import type {
   IDataGetCurrentUser,
   IDataListUsers,
   IDataMessage,
-  IDataMessageReceipt,
   IDataPresence
 } from "~/api";
 import type {
@@ -56,10 +55,7 @@ export interface IHomeWorkbenchState {
   searchResults: IDataMessage[];
   searchText: string;
   selectedDirectUserId: number | null;
-  selectedReceiptMessageId: number | null;
   sending: boolean;
-  messageReceipts: IDataMessageReceipt[];
-  receiptsLoading: boolean;
   resourceUploading: boolean;
   users: IDataListUsers;
   wsStatus: TWebSocketStatus;
@@ -78,7 +74,6 @@ export interface IHomeWorkbenchDialogs {
   groupModalOpen: boolean;
   memberModalOpen: boolean;
   profileModalOpen: boolean;
-  receiptsOpen: boolean;
 }
 
 export interface IHomeWorkbenchActions {
@@ -93,9 +88,7 @@ export interface IHomeWorkbenchActions {
   handleOpenGroupCreate: () => void;
   handleLoadMoreMessages: () => Promise<void>;
   handleLogout: () => void;
-  handleMarkSelectedReceipt: (status: "read" | "unread") => Promise<void>;
   handleOpenGroupProfile: () => void;
-  handleOpenMessageReceipts: (messageId: number) => Promise<void>;
   handleOpenSearchResult: (message: IDataMessage) => void;
   handleRefresh: () => Promise<void>;
   handleRemoveMember: (userId: number) => Promise<void>;
@@ -115,7 +108,6 @@ export interface IHomeWorkbenchActions {
   setGroupModalOpen: (open: boolean) => void;
   setMemberModalOpen: (open: boolean) => void;
   setProfileModalOpen: (open: boolean) => void;
-  setReceiptsOpen: (open: boolean) => void;
   setSearchResults: (messages: IDataMessage[]) => void;
   setSearchText: (value: string) => void;
   setSelectedDirectUserId: (userId: number | null) => void;

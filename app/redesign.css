@@ -1859,18 +1859,6 @@ textarea {
     border-bottom-right-radius: 4px;
   }
 
-  .flow-message-receipt-button.ant-btn {
-    width: 32px;
-    min-width: 32px;
-    height: 30px;
-    padding: 0;
-    color: var(--flow-muted);
-  }
-
-  .flow-message-receipt-button > span:not(.ant-btn-icon) {
-    display: none;
-  }
-
   .flow-message-image {
     max-width: 64vw;
     max-height: 48vh;

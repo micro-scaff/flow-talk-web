@@ -28,9 +28,7 @@ import {
   dataListUsers,
   dataMarkConversationRead,
   dataMarkMessageRead,
-  dataMarkMessageUnread,
   dataMessageList,
-  dataMessageReceipts,
   dataMessageSearch,
   dataRemoveGroupMember,
   dataSendMessage,
@@ -46,7 +44,6 @@ import type {
   IDataGetCurrentUser,
   IDataListUsers,
   IDataMessage,
-  IDataMessageReceipt,
   IDataPresence
 } from "~/api";
 import {
@@ -331,21 +328,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState(false);
 
   const [
-    messageReceipts,
-    setMessageReceipts
-  ] = useState<IDataMessageReceipt[]>([]);
-
-  const [
-    selectedReceiptMessageId,
-    setSelectedReceiptMessageId
-  ] = useState<number | null>(null);
-
-  const [
-    receiptsLoading,
-    setReceiptsLoading
-  ] = useState(false);
-
-  const [
     directModalOpen,
     setDirectModalOpen
   ] = useState(false);
@@ -373,11 +355,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const [
     detailsOpen,
     setDetailsOpen
-  ] = useState(false);
-
-  const [
-    receiptsOpen,
-    setReceiptsOpen
   ] = useState(false);
 
   const [
@@ -1229,61 +1206,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleSelectConversation
   ]);
 
-  const loadMessageReceipts = useCallback(async (messageId: number): Promise<void> => {
-    setReceiptsLoading(true);
-
-    try {
-      const receipts = await dataMessageReceipts({
-        message_id: messageId
-      });
-
-      setMessageReceipts(receipts);
-    } catch (error) {
-      reportError(error, "消息回执加载失败");
-    } finally {
-      setReceiptsLoading(false);
-    }
-  }, [
-    reportError
-  ]);
-
-  const handleOpenMessageReceipts = useCallback(async (messageId: number): Promise<void> => {
-    setSelectedReceiptMessageId(messageId);
-    setMessageReceipts([]);
-    setReceiptsOpen(true);
-    await loadMessageReceipts(messageId);
-  }, [
-    loadMessageReceipts
-  ]);
-
-  const handleMarkSelectedReceipt = useCallback(async (status: "read" | "unread"): Promise<void> => {
-    if (!selectedReceiptMessageId) {
-      return;
-    }
-
-    try {
-      if (status === "read") {
-        await dataMarkMessageRead({
-          message_id: selectedReceiptMessageId
-        });
-      } else {
-        await dataMarkMessageUnread({
-          message_id: selectedReceiptMessageId
-        });
-      }
-
-      await loadMessageReceipts(selectedReceiptMessageId);
-      message.success(status === "read" ? "已标记为已读" : "已标记为未读");
-    } catch (error) {
-      reportError(error, "更新消息回执失败");
-    }
-  }, [
-    loadMessageReceipts,
-    message,
-    reportError,
-    selectedReceiptMessageId
-  ]);
-
   const handleUpsertDevice = useCallback(async (): Promise<void> => {
     await upsertCurrentDevice(true);
   }, [
@@ -1598,15 +1520,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     hasMoreMessages,
     loading,
     loadingMoreMessages,
-    messageReceipts,
     messageLoading,
     messages,
     presences,
-    receiptsLoading,
     resourceUploading,
     searchResults,
     searchText,
-    selectedReceiptMessageId,
     selectedDirectUserId,
     sending,
     users,
@@ -1619,8 +1538,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     directModalOpen,
     groupModalOpen,
     memberModalOpen,
-    profileModalOpen,
-    receiptsOpen
+    profileModalOpen
   };
 
   const forms: IHomeWorkbenchForms = {
@@ -1641,9 +1559,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleDeleteDevice,
     handleLeaveGroup,
     handleLoadMoreMessages,
-    handleMarkSelectedReceipt,
     handleOpenGroupCreate,
-    handleOpenMessageReceipts,
     handleOpenSearchResult,
     handleLogout,
     handleOpenGroupProfile,
@@ -1665,7 +1581,6 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setGroupModalOpen,
     setMemberModalOpen,
     setProfileModalOpen,
-    setReceiptsOpen,
     setSearchResults,
     setSearchText,
     setSelectedDirectUserId
