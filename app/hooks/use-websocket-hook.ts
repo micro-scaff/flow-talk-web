@@ -6,10 +6,6 @@ import {
   useState
 } from "react";
 
-import {
-  buildApiWebSocketUrl
-} from "~/utils/api-base";
-
 type TWebSocketStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
 interface IWebSocketEvent {
@@ -28,6 +24,16 @@ interface IWebSocketHookState {
 const HEARTBEAT_INTERVAL_MS = 25_000;
 
 const RECONNECT_DELAY_MS = 2000;
+
+function buildWebSocketUrl(token: string, deviceId: string): string {
+  const url = new URL("/api/ws", window.location.origin);
+
+  url.protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  url.searchParams.set("token", token);
+  url.searchParams.set("device_id", deviceId);
+
+  return url.href;
+}
 
 function parseWsEvent(raw: MessageEvent["data"]): IWebSocketEvent {
   if (typeof raw !== "string") {
@@ -112,7 +118,7 @@ function useWebSocketHook(token: string, deviceId: string): IWebSocketHookState 
       setStatus("connecting");
       removeSocketListeners?.();
 
-      const socket = new WebSocket(buildApiWebSocketUrl(token, deviceId));
+      const socket = new WebSocket(buildWebSocketUrl(token, deviceId));
 
       socketRef.current = socket;
 

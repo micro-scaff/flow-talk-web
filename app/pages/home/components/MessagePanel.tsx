@@ -21,10 +21,6 @@ import {
   useRef
 } from "react";
 
-import {
-  getApiBaseUrl
-} from "~/utils/api-base";
-
 import type {
   IHomeWorkbenchViewModel
 } from "../type";
@@ -44,20 +40,6 @@ const {
 
 interface IMessagePanelProps {
   viewModel: IHomeWorkbenchViewModel;
-}
-
-function resolveResourceUrl(resourceUrl?: string): string | undefined {
-  if (!resourceUrl) {
-    return undefined;
-  }
-
-  try {
-
-    // 上传接口返回相对 static 路径时，以 API 地址为基准；完整 CDN URL 则由 URL 原样保留。
-    return new URL(resourceUrl, getApiBaseUrl()).href;
-  } catch {
-    return resourceUrl;
-  }
 }
 
 function MessagePanel({
@@ -265,7 +247,7 @@ function MessagePanel({
                             alt={item.content.name || "消息图片"}
                             className="flow-message-image"
                             loading="lazy"
-                            src={resolveResourceUrl(item.content.url)} />
+                            src={item.content.url} />
                         ) : (
                           <div className="whitespace-pre-wrap break-words text-sm leading-6">
                             {readMessageText(item)}

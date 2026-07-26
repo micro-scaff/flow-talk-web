@@ -11,9 +11,6 @@ import type {
 import {
   getAppMessage
 } from "~/utils/app-message";
-import {
-  getApiBaseUrl
-} from "~/utils/api-base";
 
 // token 单独存一份，方便请求拦截器在不解析完整会话对象的情况下快速读取。
 const AUTH_TOKEN_KEY = "flow-talk-token";
@@ -97,7 +94,6 @@ function createRequestClient(options?: RequestClientOptions): RequestClient {
 
   // 业务接口统一返回 { code, data, message }，responseReturn: "data" 让调用方只拿 data 字段。
   const client = new RequestClient({
-    baseURL: getApiBaseUrl(),
     paramsSerializer: "brackets",
     responseReturn: "data",
     timeout: 10_000,

@@ -34,7 +34,7 @@ Flow Talk 的 Web 客户端，与 `flow-talk-server` 的 v1-v7 接口和 WebSock
 cp .env.example .env
 ```
 
-默认后端地址为 `http://127.0.0.1:8080`，也可以通过 `VITE_API_BASE_URL` 指定。WebSocket 地址会基于该地址自动转换。
+接口默认使用当前站点的同源地址：开发环境由 Vite 代理 `/api`，部署后需要由 Web 服务反向代理 `/api`（包括 WebSocket）。
 
 ## 启动与校验
 
