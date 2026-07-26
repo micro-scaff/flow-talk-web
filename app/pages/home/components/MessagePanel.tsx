@@ -14,6 +14,10 @@ import {
 import type {
   ReactElement
 } from "react";
+import {
+  useEffect,
+  useRef
+} from "react";
 
 import type {
   IHomeWorkbenchViewModel
@@ -45,6 +49,41 @@ function MessagePanel({
   } = viewModel;
 
   const hasActiveConversation = Boolean(state.activeConversationId);
+
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  const messageBottomRef = useRef<HTMLDivElement>(null);
+
+  const latestMessage = state.messages.at(-1);
+
+  useEffect(() => {
+    if (!hasActiveConversation || state.messageLoading) {
+      return;
+    }
+
+    const animationFrame = window.requestAnimationFrame(() => {
+      messageBottomRef.current?.scrollIntoView({
+        block: "end"
+      });
+
+      if (chatScrollRef.current) {
+        chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+    };
+  }, [
+    hasActiveConversation,
+    latestMessage?.client_msg_id,
+    latestMessage?.id,
+    latestMessage?.sent_at,
+    latestMessage?.status,
+    state.activeConversationId,
+    state.messageLoading,
+    state.messages.length
+  ]);
 
   return (
     <div className="flow-chat-panel flex h-full min-w-0 flex-col bg-[#f5f7fb]">
@@ -86,7 +125,9 @@ function MessagePanel({
         </div>
       )}
 
-      <div className={`flow-chat-scroll ${hasActiveConversation ? "" : "is-welcome"}`}>
+      <div
+        className={`flow-chat-scroll ${hasActiveConversation ? "" : "is-welcome"}`}
+        ref={chatScrollRef}>
         <Spin spinning={state.messageLoading}>
           {hasActiveConversation ? (
 
@@ -159,6 +200,11 @@ function MessagePanel({
                   </div>
                 );
               })}
+
+              <div
+                aria-hidden="true"
+                className="flow-message-bottom-sentinel"
+                ref={messageBottomRef} />
             </Space>
           ) : (
             <div className="flow-default-screen">

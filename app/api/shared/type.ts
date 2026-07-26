@@ -6,7 +6,7 @@ export type TConversationMemberStatus = "active" | "removed" | "left";
 
 export type TMessageType = "text" | "image" | "video" | "file" | string;
 
-export type TMessageStatus = "sending" | "sent" | "delivered" | "read" | "recalled" | "deleted" | string;
+export type TMessageStatus = "normal" | "sending" | "failed" | string;
 
 export interface IDataUser {
   ["auth_source"]?: string;
@@ -49,6 +49,7 @@ export interface IDataConversation {
   id: number;
   ["last_message_at"]?: string;
   ["last_message_id"]?: number;
+  ["last_read_message_id"]?: number;
   ["member_count"]?: number;
   members?: IDataConversationMember[];
   ["owner_id"]?: number;
@@ -59,6 +60,7 @@ export interface IDataConversation {
 export interface IDataConversationListItem extends IDataConversation {
   ["last_message"]?: IDataMessage;
   ["unread_count"]?: number;
+  ["unread_revision"]?: number;
 }
 
 export interface IDataMessagePage {
@@ -69,8 +71,11 @@ export interface IDataMessagePage {
 
 export interface IDataReadState {
   ["conversation_id"]: number;
+  ["last_message_id"]?: number;
   ["last_read_at"]?: string;
   ["last_read_message_id"]?: number;
+  revision?: number;
+  ["unread_count"]?: number;
 }
 
 export interface IDataDevicePayload {
@@ -92,6 +97,7 @@ export interface IDataPresence {
   ["last_active_at"]?: string;
   ["last_seen_at"]?: string;
   online: boolean;
+  revision?: number;
   ["user_id"]: number;
 }
 

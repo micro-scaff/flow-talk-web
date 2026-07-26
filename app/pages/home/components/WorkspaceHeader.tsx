@@ -1,6 +1,6 @@
 import {
+  ArrowLeftOutlined,
   LaptopOutlined,
-  MenuOutlined,
   PlusOutlined,
   SearchOutlined,
   TeamOutlined
@@ -21,6 +21,9 @@ import type {
 import type {
   IHomeWorkbenchViewModel
 } from "../type";
+import {
+  getUserName
+} from "../utils";
 
 const {
   Text,
@@ -29,12 +32,10 @@ const {
 
 interface IWorkspaceHeaderProps {
   viewModel: IHomeWorkbenchViewModel;
-  onOpenMobileSidebar: () => void;
 }
 
 function WorkspaceHeader({
-  viewModel,
-  onOpenMobileSidebar
+  viewModel
 }: IWorkspaceHeaderProps): ReactElement {
   const {
     actions,
@@ -43,24 +44,44 @@ function WorkspaceHeader({
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
+  const isDirectConversation = state.activeConversation?.type === "direct";
+
+  const directMember = isDirectConversation ? state.activeConversation?.members?.find(member => {
+    return member.status === "active" && member.user_id !== state.currentUser?.id;
+  }) : undefined;
+
+  const directUser = directMember ? state.users.find(user => {
+    return user.id === directMember.user_id;
+  }) : undefined;
+
+  const directPresence = directMember ? state.presences[directMember.user_id] : undefined;
+
+  const headerTitle = isDirectConversation ? getUserName(directUser || (directMember ? {
+    id: directMember.user_id
+  } : null)) : state.activeTitle;
+
+  const headerAvatar = isDirectConversation ? directUser?.avatar_url : state.activeConversation?.avatar_url;
+
+  const headerDescription = isDirectConversation ? (directPresence?.online ? "在线" : "离线") : `${state.onlineCount} 位在线`;
+
   return (
     <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"}`}>
       {/* 只有用户明确选择会话后才展示会话信息，首页保持未打开状态。 */}
       <div className="flow-topbar-title flex min-w-0 items-center gap-3">
         <Button
-          aria-label="打开联系人栏"
+          aria-label="返回用户列表"
           className="flow-icon-button flow-mobile-menu-button"
-          icon={<MenuOutlined />}
+          icon={<ArrowLeftOutlined />}
           shape="circle"
-          onClick={onOpenMobileSidebar} />
+          onClick={actions.handleBackToContactList} />
 
         {hasActiveConversation && (
           <>
             <Avatar
               className="flow-active-avatar shrink-0 bg-[#e7f3ff] text-[#1877f2]"
               size={40}
-              src={state.activeConversation?.avatar_url || undefined}>
-              {state.activeTitle.slice(0, 1)}
+              src={headerAvatar || undefined}>
+              {headerTitle.slice(0, 1)}
             </Avatar>
 
             <div className="min-w-0">
@@ -68,7 +89,7 @@ function WorkspaceHeader({
                 <Title
                   className="!mb-0 !text-lg !font-black"
                   level={2}>
-                  {state.activeTitle}
+                  {headerTitle}
                 </Title>
 
                 {state.activeConversation?.type === "group" && (
@@ -80,10 +101,12 @@ function WorkspaceHeader({
                 )}
               </div>
 
-              <Text className="mt-1 block text-[#65676b]">
-                {state.onlineCount}
-                {" "}
-                位在线
+              <Text className="flow-active-status mt-1 block">
+                {isDirectConversation && (
+                  <span className={`flow-active-status-dot ${directPresence?.online ? "is-online" : ""}`} />
+                )}
+
+                {headerDescription}
               </Text>
             </div>
           </>

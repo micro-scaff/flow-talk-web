@@ -74,6 +74,7 @@ export interface IHomeWorkbenchDialogs {
 }
 
 export interface IHomeWorkbenchActions {
+  handleBackToContactList: () => void;
   clearErrorNotice: () => void;
   handleAddMembers: () => Promise<void>;
   handleCreateDirect: () => Promise<void>;

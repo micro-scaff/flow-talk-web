@@ -2,7 +2,9 @@ import type {
   IDataConversation,
   IDataConversationListItem,
   IDataGetCurrentUser,
-  IDataMessage
+  IDataMessage,
+  IDataPresence,
+  IDataReadState
 } from "~/api";
 
 interface ICreateLocalMessageParams {
@@ -180,6 +182,49 @@ function updateConversationSummary(
   });
 }
 
+function updateConversationUnreadState(
+    currentConversations: IDataConversationListItem[],
+    readState: IDataReadState,
+    activeConversationId?: null | number
+): IDataConversationListItem[] {
+  return currentConversations.map(conversation => {
+    if (conversation.id !== readState.conversation_id) {
+      return conversation;
+    }
+
+    if (readState.revision && conversation.unread_revision && readState.revision < conversation.unread_revision) {
+      return conversation;
+    }
+
+    return {
+      ...conversation,
+      last_message_id: readState.last_message_id || conversation.last_message_id,
+      last_read_message_id: readState.last_read_message_id || conversation.last_read_message_id,
+      unread_count: conversation.id === activeConversationId ? 0 : readState.unread_count ?? conversation.unread_count,
+      unread_revision: readState.revision || conversation.unread_revision
+    };
+  });
+}
+
+function mergePresence(
+    currentPresences: Record<number, IDataPresence>,
+    nextPresence: IDataPresence
+): Record<number, IDataPresence> {
+  const currentPresence = currentPresences[nextPresence.user_id];
+
+  if (nextPresence.revision && currentPresence?.revision && nextPresence.revision < currentPresence.revision) {
+    return currentPresences;
+  }
+
+  return {
+    ...currentPresences,
+    [nextPresence.user_id]: {
+      ...currentPresence,
+      ...nextPresence
+    }
+  };
+}
+
 function shouldRefreshForRealtimeMessage(
     eventType: string | undefined,
     messageItem: IDataMessage,
@@ -249,9 +294,11 @@ export {
   isFormValidationError,
   markMessageFailed,
   mergeMessage,
+  mergePresence,
   pickWsMessage,
   readMessageText,
   replaceSendingMessage,
   shouldRefreshForRealtimeMessage,
-  updateConversationSummary
+  updateConversationSummary,
+  updateConversationUnreadState
 };

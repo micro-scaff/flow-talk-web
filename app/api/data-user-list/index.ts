@@ -14,9 +14,7 @@ const DEFAULT_LIST_USERS_PARAMS: IParamsListUsers = {
 };
 
 function dataListUsers(params: IParamsListUsers = DEFAULT_LIST_USERS_PARAMS): Promise<IDataListUsers> {
-  return apiClient.get<IDataListUsers>("/api/users", {
-    params
-  });
+  return apiClient.get<IDataListUsers, IParamsListUsers>("/api/users", params);
 }
 
 export { dataListUsers };

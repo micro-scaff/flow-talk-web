@@ -493,6 +493,29 @@ a {
   gap: 10px;
 }
 
+.flow-brand-button {
+  padding: 4px 6px 4px 4px;
+  margin: -4px 0 -4px -4px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.flow-brand-button:hover {
+  background: var(--flow-surface-hover);
+}
+
+.flow-brand-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--flow-primary) 48%, transparent);
+  outline-offset: 2px;
+}
+
+.flow-brand-button:active {
+  transform: translateY(1px);
+}
+
 .flow-brand-mark {
   display: grid;
   width: 40px;
@@ -784,6 +807,28 @@ a {
 .flow-active-avatar.ant-avatar {
   border: 1px solid var(--flow-primary-border);
   box-shadow: 0 8px 18px rgba(24, 119, 242, 0.12);
+}
+
+.flow-active-status {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  color: var(--flow-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.flow-active-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #a8b0ba;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #a8b0ba 16%, transparent);
+}
+
+.flow-active-status-dot.is-online {
+  background: var(--flow-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--flow-accent) 18%, transparent);
 }
 
 .flow-topbar-actions {
@@ -1733,43 +1778,27 @@ a {
   }
 
   .flow-sidebar.ant-layout-sider {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: 30;
-    width: min(88vw, 360px) !important;
-    min-width: min(88vw, 360px) !important;
-    max-width: 360px !important;
-    height: 100dvh;
-    flex: none !important;
-    border-right: 0;
-    box-shadow: 18px 0 48px rgba(23, 33, 43, 0.2);
-    transform: translateX(-105%);
-    transition: transform 0.22s ease;
+    display: none;
   }
 
-  .flow-sidebar.ant-layout-sider.is-mobile-open {
+  .flow-workbench.is-mobile-contact-mode .flow-sidebar.ant-layout-sider {
+    display: block;
+    position: relative;
+    inset: auto;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: none !important;
+    box-shadow: none;
     transform: translateX(0);
   }
 
-  .flow-mobile-sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 20;
-    display: block;
-    visibility: hidden;
-    border: 0;
-    background: rgba(15, 23, 42, 0.42);
-    opacity: 0;
-    pointer-events: none;
-    transition:
-      opacity 0.22s ease,
-      visibility 0.22s ease;
+  .flow-workbench.is-mobile-contact-mode .flow-workbench-content,
+  .flow-workbench.is-mobile-contact-mode .flow-mobile-sidebar-close.ant-btn {
+    display: none;
   }
 
-  .flow-mobile-sidebar-backdrop.is-visible {
-    visibility: visible;
-    opacity: 1;
-    pointer-events: auto;
+  .flow-mobile-sidebar-backdrop {
+    display: none;
   }
 
   .flow-sidebar-shell {

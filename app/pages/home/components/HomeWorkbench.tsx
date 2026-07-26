@@ -5,9 +5,6 @@ import {
 import type {
   ReactElement
 } from "react";
-import {
-  useState
-} from "react";
 
 import type {
   IHomeWorkbenchViewModel
@@ -36,32 +33,21 @@ interface IHomeWorkbenchProps {
 function HomeWorkbench({
   viewModel
 }: IHomeWorkbenchProps): ReactElement {
-  const [
-    isMobileSidebarOpen,
-    setIsMobileSidebarOpen
-  ] = useState(false);
-
   const {
     actions,
     state
   } = viewModel;
 
+  const isContactMode = !state.activeConversationId;
+
   return (
-    <main className="flow-workbench bg-[#f0f2f5] text-[#050505]">
+    <main className={`flow-workbench ${isContactMode ? "is-mobile-contact-mode" : ""} bg-[#f0f2f5] text-[#050505]`}>
       <Layout className="flow-workbench-layout bg-transparent">
         <ConversationSidebar
-          isMobileOpen={isMobileSidebarOpen}
+          isMobileOpen={false}
           viewModel={viewModel}
           onMobileClose={() => {
-            setIsMobileSidebarOpen(false);
-          }} />
-
-        <button
-          aria-label="关闭联系人栏"
-          className={`flow-mobile-sidebar-backdrop ${isMobileSidebarOpen ? "is-visible" : ""}`}
-          type="button"
-          onClick={() => {
-            setIsMobileSidebarOpen(false);
+            return undefined;
           }} />
 
         <Content className="flow-workbench-content flex min-w-0 flex-col">
@@ -75,10 +61,7 @@ function HomeWorkbench({
           )}
 
           <WorkspaceHeader
-            viewModel={viewModel}
-            onOpenMobileSidebar={() => {
-              setIsMobileSidebarOpen(true);
-            }} />
+            viewModel={viewModel} />
 
           <section className="flow-workbench-main min-h-0 flex-1">
             <MessagePanel viewModel={viewModel} />

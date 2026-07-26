@@ -16,10 +16,18 @@ function getDeviceId(): string {
   const existingDeviceId = window.localStorage.getItem(key);
 
   if (existingDeviceId) {
-    return existingDeviceId;
+    if (existingDeviceId.startsWith("web-")) {
+      return existingDeviceId;
+    }
+
+    const normalizedDeviceId = `web-${existingDeviceId}`;
+
+    window.localStorage.setItem(key, normalizedDeviceId);
+
+    return normalizedDeviceId;
   }
 
-  const deviceId = createClientMessageId();
+  const deviceId = `web-${createClientMessageId()}`;
 
   window.localStorage.setItem(key, deviceId);
 

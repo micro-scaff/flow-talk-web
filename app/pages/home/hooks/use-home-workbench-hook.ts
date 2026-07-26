@@ -75,10 +75,12 @@ import {
   isFormValidationError,
   markMessageFailed,
   mergeMessage,
+  mergePresence,
   pickWsMessage,
   replaceSendingMessage,
   shouldRefreshForRealtimeMessage,
-  updateConversationSummary
+  updateConversationSummary,
+  updateConversationUnreadState
 } from "../utils";
 
 const MESSAGE_ACK_TIMEOUT_MS = 8000;
@@ -92,6 +94,44 @@ interface IPendingMessage {
   conversationId: number;
   messageType: IDataMessage["message_type"];
   timeoutId?: number;
+}
+
+function pickWsPresence(payload: unknown): IDataPresence | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  if ("user_id" in payload && "online" in payload) {
+    return payload as IDataPresence;
+  }
+
+  return null;
+}
+
+function pickWsUnreadState(payload: unknown): {
+  ["conversation_id"]: number;
+  ["last_message_id"]?: number;
+  ["last_read_at"]?: string;
+  ["last_read_message_id"]?: number;
+  revision?: number;
+  ["unread_count"]?: number;
+} | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  if ("conversation_id" in payload && "unread_count" in payload) {
+    return payload as {
+      ["conversation_id"]: number;
+      ["last_message_id"]?: number;
+      ["last_read_at"]?: string;
+      ["last_read_message_id"]?: number;
+      revision?: number;
+      ["unread_count"]?: number;
+    };
+  }
+
+  return null;
 }
 
 function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
@@ -550,9 +590,15 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         void dataMarkConversationRead({
           conversation_id: conversationId,
           last_read_message_id: lastMessageId
-        }).catch(error => {
-          reportError(error, "标记会话已读失败");
-        });
+        }).
+            then(readState => {
+              setConversations(currentConversations => {
+                return updateConversationUnreadState(currentConversations, readState, conversationId);
+              });
+            }).
+            catch(error => {
+              reportError(error, "标记会话已读失败");
+            });
       }
     } catch (error) {
       reportError(error, "会话详情或消息加载失败");
@@ -565,6 +611,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const handleSelectConversation = useCallback((conversationId: number): void => {
     navigate(`/conversations/${conversationId}`);
+  }, [
+    navigate
+  ]);
+
+  const handleBackToContactList = useCallback((): void => {
+    navigate("/");
   }, [
     navigate
   ]);
@@ -1025,6 +1077,30 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   useEffect(() => {
     const wsEvent = lastEvent;
 
+    if (wsEvent?.type === "presence.changed") {
+      const presence = pickWsPresence(wsEvent.payload);
+
+      if (presence) {
+        setPresences(currentPresences => {
+          return mergePresence(currentPresences, presence);
+        });
+      }
+
+      return;
+    }
+
+    if (wsEvent?.type === "conversation.unread.changed") {
+      const unreadState = pickWsUnreadState(wsEvent.payload);
+
+      if (unreadState) {
+        setConversations(currentConversations => {
+          return updateConversationUnreadState(currentConversations, unreadState, activeConversationId);
+        });
+      }
+
+      return;
+    }
+
     const realtimeMessage = pickWsMessage(wsEvent?.payload);
 
     if (wsEvent?.type === "error") {
@@ -1083,6 +1159,21 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       setMessages(currentMessages => {
         return mergeMessage(currentMessages, realtimeMessage);
       });
+
+      if (realtimeMessage.id > 0 && realtimeMessage.sender_id !== currentUser?.id) {
+        void dataMarkConversationRead({
+          conversation_id: realtimeMessage.conversation_id,
+          last_read_message_id: realtimeMessage.id
+        }).
+            then(readState => {
+              setConversations(currentConversations => {
+                return updateConversationUnreadState(currentConversations, readState, activeConversationId);
+              });
+            }).
+            catch(error => {
+              reportError(error, "标记会话已读失败");
+            });
+      }
     }
 
     const conversationExists = conversationsRef.current.some(conversation => {
@@ -1107,6 +1198,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     isRecentlyAckedMessage,
     lastEvent,
     rememberAckedMessage,
+    reportError,
     scheduleConversationRefresh
   ]);
 
@@ -1165,6 +1257,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   };
 
   const actions: IHomeWorkbenchActions = {
+    handleBackToContactList,
     clearErrorNotice: () => {
       return setErrorNotice("");
     },

@@ -52,6 +52,14 @@ interface IConversationSidebarProps {
   onMobileClose: () => void;
 }
 
+function buildDirectKey(userId: number, targetUserId: number): string {
+  const firstUserId = Math.min(userId, targetUserId);
+
+  const secondUserId = Math.max(userId, targetUserId);
+
+  return `${firstUserId}:${secondUserId}`;
+}
+
 function ConversationSidebar({
   isMobileOpen,
   viewModel,
@@ -86,6 +94,10 @@ function ConversationSidebar({
     return state.presences[user.id as number]?.online;
   }).length;
 
+  const totalUnreadCount = state.conversations.reduce((total, conversation) => {
+    return total + (conversation.unread_count || 0);
+  }, 0);
+
   const currentUserName = getUserName(state.currentUser);
 
   const activeDirectUserId = state.activeConversation?.type === "direct" ? state.activeConversation.members?.find(member => {
@@ -103,6 +115,34 @@ function ConversationSidebar({
     ].filter(Boolean).join(" · ");
   }
 
+  function getDirectUnreadCount(userId: number): number {
+    if (!state.currentUser?.id) {
+      return 0;
+    }
+
+    const directKey = buildDirectKey(state.currentUser.id, userId);
+
+    const conversation = state.conversations.find(item => {
+      if (item.type !== "direct") {
+        return false;
+      }
+
+      if (item.direct_key) {
+        return item.direct_key === directKey;
+      }
+
+      if (item.unread_count && item.last_message?.sender_id === userId) {
+        return true;
+      }
+
+      return Boolean(item.members?.some(member => {
+        return member.status === "active" && member.user_id === userId;
+      }));
+    });
+
+    return conversation?.unread_count || 0;
+  }
+
   return (
     <Sider
       className={`flow-sidebar ${isMobileOpen ? "is-mobile-open" : ""} border-r border-[#d9dee8] bg-white`}
@@ -112,7 +152,21 @@ function ConversationSidebar({
         {/* 顶部区域放全局工具：主题、刷新、退出，以及当前登录用户信息。 */}
         <header className="flow-sidebar-header">
           <div className="flow-brand-row">
-            <div className="flow-brand-lockup">
+            <div
+              aria-label="返回欢迎页"
+              className="flow-brand-lockup flow-brand-button"
+              role="button"
+              tabIndex={0}
+              title="返回欢迎页"
+              onClick={actions.handleBackToContactList}
+              onKeyDown={event => {
+                if (event.key !== "Enter" && event.key !== " ") {
+                  return;
+                }
+
+                event.preventDefault();
+                actions.handleBackToContactList();
+              }}>
               <div className="flow-brand-mark">
                 FT
               </div>
@@ -199,7 +253,7 @@ function ConversationSidebar({
               <span className="flow-status-dot" />
 
               <span>
-                {`${contacts.length} 位联系人 · ${onlineContactCount} 人在线`}
+                {`${contacts.length} 位联系人 · ${onlineContactCount} 人在线${totalUnreadCount > 0 ? ` · ${totalUnreadCount} 条未读` : ""}`}
               </span>
             </div>
           </div>
@@ -224,8 +278,8 @@ function ConversationSidebar({
 
           <Tag
             className="m-0 rounded-full px-2 font-bold"
-            color="blue">
-            {visibleContacts.length}
+            color={totalUnreadCount > 0 ? "red" : "blue"}>
+            {totalUnreadCount > 0 ? `${totalUnreadCount} 未读` : visibleContacts.length}
           </Tag>
         </div>
 
@@ -241,6 +295,8 @@ function ConversationSidebar({
 
                 const active = activeDirectUserId === userId;
 
+                const unreadCount = getDirectUnreadCount(userId);
+
                 return (
 
                 // 点击联系人直接打开单聊；当前单聊联系人保持高亮。
@@ -254,18 +310,27 @@ function ConversationSidebar({
                       onMobileClose();
                     }}>
                     <Badge
-                      color={isOnline ? "#31a24c" : "#a8b0ba"}
-                      dot
+                      count={unreadCount}
                       offset={[
-                        -4,
-                        36
-                      ]}>
-                      <Avatar
-                        className="bg-[#e7f3ff] font-bold text-[#1877f2]"
-                        size={42}
-                        src={user.avatar_url || undefined}>
-                        {getUserName(user).slice(0, 1)}
-                      </Avatar>
+                        -2,
+                        2
+                      ]}
+                      overflowCount={99}
+                      size="small">
+                      <Badge
+                        color={isOnline ? "#31a24c" : "#a8b0ba"}
+                        dot
+                        offset={[
+                          -4,
+                          36
+                        ]}>
+                        <Avatar
+                          className="bg-[#e7f3ff] font-bold text-[#1877f2]"
+                          size={42}
+                          src={user.avatar_url || undefined}>
+                          {getUserName(user).slice(0, 1)}
+                        </Avatar>
+                      </Badge>
                     </Badge>
 
                     <span className="flow-contact-copy">
