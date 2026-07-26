@@ -1,14 +1,22 @@
 import {
+  FileOutlined,
+  PaperClipOutlined,
   ReloadOutlined,
   SendOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
   Button,
+  Image,
   Input,
   Space,
   Spin,
-  Typography
+  Tooltip,
+  Typography,
+  Upload
+} from "antd";
+import type {
+  UploadProps
 } from "antd";
 import type {
   ReactElement
@@ -19,12 +27,24 @@ import {
 } from "react";
 
 import type {
+  TextAreaRef
+} from "antd/es/input/TextArea";
+
+import type {
+  IDataMessage
+} from "~/api";
+
+import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
   formatDateTime,
   getUserName,
+  isFileMessage,
+  isImageMessage,
+  isRenderableMessage,
   isTextMessage,
+  isVideoMessage,
   readMessageText
 } from "../utils";
 
@@ -40,6 +60,123 @@ interface IMessagePanelProps {
   viewModel: IHomeWorkbenchViewModel;
 }
 
+function formatFileSize(size?: number): string {
+  if (!size || size <= 0) {
+    return "";
+  }
+
+  if (size < 1024) {
+    return `${size} B`;
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(size / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function readResourceName(messageItem: IDataMessage): string {
+  return typeof messageItem.content?.name === "string" && messageItem.content.name.trim()
+    ? messageItem.content.name
+    : "资源文件";
+}
+
+function isVideoUrl(url?: string): boolean {
+  return Boolean(url && (/\.(?:mov|mp4|webm)(?:[?#].*)?$/iu).test(url));
+}
+
+function isVideoResource(messageItem: IDataMessage): boolean {
+  return isVideoMessage(messageItem) ||
+    (
+      isFileMessage(messageItem) &&
+      (messageItem.content?.type === "video" || isVideoUrl(messageItem.content?.url))
+    );
+}
+
+function renderMessageContent(messageItem: IDataMessage): ReactElement {
+  if (isImageMessage(messageItem)) {
+    const resourceName = readResourceName(messageItem);
+
+    const resourceUrl = messageItem.content?.url || "";
+
+    return (
+      <Image
+        alt={resourceName}
+        className="flow-message-image"
+        preview={{
+          mask: "预览图片"
+        }}
+        src={resourceUrl} />
+    );
+  }
+
+  if (isVideoResource(messageItem)) {
+    const resourceName = readResourceName(messageItem);
+
+    const resourceUrl = messageItem.content?.url || "";
+
+    const fileSize = typeof messageItem.content?.size === "number" ? formatFileSize(messageItem.content.size) : "";
+
+    return (
+      <div className="flow-message-video-card">
+        <video
+          className="flow-message-video"
+          controls
+          preload="metadata"
+          src={resourceUrl} />
+
+        <a
+          className="flow-message-resource-link"
+          href={resourceUrl}
+          rel="noreferrer"
+          target="_blank">
+          {resourceName}
+          {fileSize ? ` · ${fileSize}` : ""}
+        </a>
+      </div>
+    );
+  }
+
+  if (isFileMessage(messageItem)) {
+    const resourceName = readResourceName(messageItem);
+
+    const resourceUrl = messageItem.content?.url || "";
+
+    const fileSize = typeof messageItem.content?.size === "number" ? formatFileSize(messageItem.content.size) : "";
+
+    return (
+      <a
+        className="flow-message-file"
+        href={resourceUrl}
+        rel="noreferrer"
+        target="_blank">
+        <span className="flow-message-file-icon">
+          <FileOutlined />
+        </span>
+
+        <span className="flow-message-file-copy">
+          <span className="flow-message-file-name">
+            {resourceName}
+          </span>
+
+          {fileSize && (
+            <span className="flow-message-file-meta">
+              {fileSize}
+            </span>
+          )}
+        </span>
+      </a>
+    );
+  }
+
+  return (
+    <div className="whitespace-pre-wrap break-words text-sm leading-6">
+      {readMessageText(messageItem)}
+    </div>
+  );
+}
+
 function MessagePanel({
   viewModel
 }: IMessagePanelProps): ReactElement {
@@ -50,7 +187,7 @@ function MessagePanel({
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
-  const textMessages = state.messages.filter(isTextMessage);
+  const visibleMessages = state.messages.filter(isRenderableMessage);
 
   const textSearchResults = state.searchResults.filter(isTextMessage);
 
@@ -58,9 +195,23 @@ function MessagePanel({
 
   const messageBottomRef = useRef<HTMLDivElement>(null);
 
+  const messageInputRef = useRef<TextAreaRef>(null);
+
   const skipNextAutoScrollRef = useRef(false);
 
-  const latestMessage = textMessages.at(-1);
+  const latestMessage = visibleMessages.at(-1);
+
+  const resourceUploadProps: UploadProps = {
+    accept: ".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,image/*,video/*",
+    beforeUpload(file) {
+      void actions.handleSendResource(file);
+
+      return Upload.LIST_IGNORE;
+    },
+    disabled: state.resourceUploading || state.sending,
+    maxCount: 1,
+    showUploadList: false
+  };
 
   useEffect(() => {
     if (!hasActiveConversation || state.messageLoading) {
@@ -94,7 +245,7 @@ function MessagePanel({
     latestMessage?.status,
     state.activeConversationId,
     state.messageLoading,
-    textMessages.length
+    visibleMessages.length
   ]);
 
   async function handleLoadEarlierMessages(): Promise<void> {
@@ -110,6 +261,20 @@ function MessagePanel({
       if (scrollContainer) {
         scrollContainer.scrollTop += scrollContainer.scrollHeight - previousScrollHeight;
       }
+    });
+  }
+
+  function keepMessageInputFocused(): void {
+    messageInputRef.current?.focus({
+      preventScroll: true
+    });
+  }
+
+  async function handleSubmitMessage(): Promise<void> {
+    keepMessageInputFocused();
+    await actions.handleSendMessage();
+    window.requestAnimationFrame(() => {
+      keepMessageInputFocused();
     });
   }
 
@@ -190,7 +355,7 @@ function MessagePanel({
                 </Button>
               )}
 
-              {textMessages.length === 0 && (
+              {visibleMessages.length === 0 && (
                 <div className="flow-chat-empty">
                   <div className="flow-empty-bubble-stack">
                     <span />
@@ -208,7 +373,7 @@ function MessagePanel({
                 </div>
               )}
 
-              {textMessages.map(item => {
+              {visibleMessages.map(item => {
                 const isMine = item.sender_id === state.currentUser?.id;
 
                 const sender = state.users.find(user => {
@@ -244,9 +409,7 @@ function MessagePanel({
                       </Text>
 
                       <div className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${item.status === "failed" ? "is-failed" : ""}`}>
-                        <div className="whitespace-pre-wrap break-words text-sm leading-6">
-                          {readMessageText(item)}
-                        </div>
+                        {renderMessageContent(item)}
                       </div>
 
                       {item.status === "failed" && (
@@ -312,6 +475,17 @@ function MessagePanel({
       {hasActiveConversation && (
         <footer className="flow-composer">
           <div className="flow-composer-inner">
+            <Tooltip title="发送图片或视频">
+              <Upload {...resourceUploadProps}>
+                <Button
+                  aria-label="发送文件"
+                  className="flow-resource-button"
+                  icon={<PaperClipOutlined />}
+                  loading={state.resourceUploading}
+                  type="text" />
+              </Upload>
+            </Tooltip>
+
             <TextArea
               aria-label="流言内容"
               autoSize={{
@@ -319,8 +493,10 @@ function MessagePanel({
                 minRows: 1
               }}
               className="flow-message-input"
+              disabled={state.resourceUploading}
               enterKeyHint="send"
-              placeholder="说点什么…"
+              placeholder={state.resourceUploading ? "资源上传中…" : "说点什么…"}
+              ref={messageInputRef}
               value={state.draftText}
               onChange={event => {
                 return actions.setDraftText(event.target.value);
@@ -332,18 +508,24 @@ function MessagePanel({
 
                 // Enter 发送、Shift+Enter 换行，保持即时通讯工具的常见输入体验。
                 event.preventDefault();
-                void actions.handleSendMessage();
+                void handleSubmitMessage();
               }} />
 
             <Button
               aria-label="发送消息"
               className="flow-send-button"
-              disabled={!state.draftText.trim()}
+              disabled={!state.draftText.trim() || state.resourceUploading}
               icon={<SendOutlined />}
               loading={state.sending}
               type="primary"
+              onMouseDown={event => {
+                event.preventDefault();
+              }}
+              onPointerDown={event => {
+                event.preventDefault();
+              }}
               onClick={() => {
-                return void actions.handleSendMessage();
+                return void handleSubmitMessage();
               }} />
           </div>
         </footer>

@@ -52,6 +52,7 @@ export interface IHomeWorkbenchState {
   messageLoading: boolean;
   messages: IDataMessage[];
   presences: Record<number, IDataPresence>;
+  resourceUploading: boolean;
   searchResults: IDataMessage[];
   searchText: string;
   selectedDirectUserId: number | null;
@@ -93,6 +94,7 @@ export interface IHomeWorkbenchActions {
   handleRemoveMember: (userId: number) => Promise<void>;
   handleSearch: () => Promise<void>;
   handleSelectConversation: (conversationId: number) => void;
+  handleSendResource: (file: File) => Promise<void>;
   handleSendMessage: () => Promise<void>;
   handleRetryMessage: (message: IDataMessage) => Promise<void>;
   handleUpdateGroupProfile: () => Promise<void>;

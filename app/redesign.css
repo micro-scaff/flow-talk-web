@@ -1256,6 +1256,86 @@ textarea {
   border-color: color-mix(in srgb, #d1432f 55%, transparent);
 }
 
+.flow-message-image {
+  display: block;
+  max-width: min(320px, 58vw);
+  max-height: 360px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.flow-message-video-card {
+  display: grid;
+  gap: 8px;
+  max-width: min(360px, 60vw);
+}
+
+.flow-message-video {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  border-radius: 10px;
+  background: #111;
+}
+
+.flow-message-resource-link {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0.88;
+  text-decoration: none;
+}
+
+.flow-message-resource-link:hover {
+  color: inherit;
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.flow-message-file {
+  display: flex;
+  min-width: min(260px, 56vw);
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.flow-message-file:hover {
+  color: inherit;
+}
+
+.flow-message-file-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-size: 18px;
+}
+
+.flow-message-file-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.flow-message-file-name {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-message-file-meta {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
 .flow-search-result-item {
   display: flex;
   min-width: 0;
@@ -1304,6 +1384,22 @@ textarea {
 .flow-message-input.ant-input:hover {
   border-color: var(--flow-primary-border);
   box-shadow: 0 0 0 3px var(--flow-focus);
+}
+
+.flow-resource-button.ant-btn {
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--flow-border-soft);
+  border-radius: 12px;
+  background: var(--flow-surface);
+  color: var(--flow-muted);
+}
+
+.flow-resource-button.ant-btn:hover {
+  border-color: var(--flow-primary-border) !important;
+  background: var(--flow-primary-soft) !important;
+  color: var(--flow-primary) !important;
+  transform: translateY(-2px);
 }
 
 .flow-send-button.ant-btn {
@@ -1628,14 +1724,32 @@ textarea {
   }
 
   .flow-workbench {
-    height: 100dvh;
+    --flow-mobile-viewport-height: 100svh;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: var(--flow-mobile-viewport-height);
+    max-height: var(--flow-mobile-viewport-height);
     min-height: 0;
     overflow: hidden;
     overscroll-behavior: none;
   }
 
   .flow-workbench-content {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
     animation: mobile-page-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .flow-workbench-main {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .flow-chat-panel {
+    min-height: 0;
+    overflow: hidden;
   }
 
   /* 联系人模式使用整屏列表；顶部账号与搜索区保持紧凑、可触达。 */
@@ -1651,7 +1765,8 @@ textarea {
   }
 
   .flow-sidebar-shell {
-    height: 100dvh;
+    height: var(--flow-mobile-viewport-height);
+    max-height: var(--flow-mobile-viewport-height);
     padding-bottom: env(safe-area-inset-bottom);
   }
 
@@ -1775,11 +1890,13 @@ textarea {
 
   /* 会话模式只保留返回、会话身份和上下文操作，避免窄屏工具栏拥挤。 */
   .flow-topbar {
+    flex: 0 0 auto;
     min-height: calc(68px + env(safe-area-inset-top));
     gap: 8px;
     padding: env(safe-area-inset-top) 12px 0;
     background: color-mix(in srgb, var(--flow-surface-elevated) 94%, transparent);
     backdrop-filter: blur(16px);
+    transform: translateZ(0);
   }
 
   .flow-topbar-actions {
@@ -1883,6 +2000,8 @@ textarea {
   }
 
   .flow-chat-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
     padding: 20px 12px 24px;
     overscroll-behavior: contain;
     scroll-padding-bottom: 24px;
@@ -1921,6 +2040,15 @@ textarea {
 
   .flow-message-bubble.is-mine {
     border-bottom-right-radius: 4px;
+  }
+
+  .flow-message-image,
+  .flow-message-video-card {
+    max-width: min(260px, 72vw);
+  }
+
+  .flow-message-file {
+    min-width: min(220px, 68vw);
   }
 
   .flow-default-screen {
@@ -1972,6 +2100,13 @@ textarea {
   }
 
   .flow-send-button.ant-btn {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    touch-action: manipulation;
+  }
+
+  .flow-resource-button.ant-btn {
     width: 44px;
     min-width: 44px;
     height: 44px;

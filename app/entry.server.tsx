@@ -1,22 +1,22 @@
 import {
-  PassThrough
-} from "node:stream";
-
-import {
   createCache,
   extractStyle,
   StyleProvider
 } from "@ant-design/cssinjs";
 import type {
-  AppLoadContext,
   EntryContext
 } from "react-router";
 import {
   ServerRouter
 } from "react-router";
+
 import {
   renderToPipeableStream
 } from "react-dom/server";
+
+import {
+  PassThrough
+} from "node:stream";
 
 export const streamTimeout = 5000;
 
@@ -24,13 +24,14 @@ export default function handleRequest(
     request: Request,
     responseStatusCode: number,
     responseHeaders: Headers,
-    routerContext: EntryContext,
-    _loadContext: AppLoadContext
+    routerContext: EntryContext
 ): Promise<Response> | Response {
+  let statusCode = responseStatusCode;
+
   if (request.method.toUpperCase() === "HEAD") {
     return new Response(null, {
       headers: responseHeaders,
-      status: responseStatusCode
+      status: statusCode
     });
   }
 
@@ -39,8 +40,14 @@ export default function handleRequest(
 
     let shellRendered = false;
 
+    let streamAborted = false;
+
+    let abortRender: () => void = () => {
+      streamAborted = true;
+    };
+
     const timeoutId = setTimeout(() => {
-      abort();
+      abortRender();
     }, streamTimeout + 1000);
 
     const {
@@ -74,20 +81,24 @@ export default function handleRequest(
 
               const antDesignStyles = extractStyle(styleCache);
 
-              const document = html.replace("</head>", `${antDesignStyles}</head>`);
+              const headCloseIndex = html.indexOf("</head>");
+
+              const document = headCloseIndex === -1
+                ? `${antDesignStyles}${html}`
+                : `${html.slice(0, headCloseIndex)}${antDesignStyles}${html.slice(headCloseIndex)}`;
 
               responseHeaders.set("Content-Type", "text/html");
 
               resolve(new Response(document, {
                 headers: responseHeaders,
-                status: responseStatusCode
+                status: statusCode
               }));
             });
 
             pipe(body);
           },
           onError(error: unknown) {
-            responseStatusCode = 500;
+            statusCode = 500;
 
             if (shellRendered) {
               console.error(error);
@@ -99,5 +110,11 @@ export default function handleRequest(
           }
         }
     );
+
+    abortRender = abort;
+
+    if (streamAborted) {
+      abort();
+    }
   });
 }

@@ -89,12 +89,73 @@ const MESSAGE_ACK_TIMEOUT_MS = 8000;
 // 多条实时消息连续到达时合并刷新会话列表，避免短时间内重复打接口。
 const REALTIME_REFRESH_DEBOUNCE_MS = 200;
 
+// 后端当前没有 user.created 实时事件；页面可见时轻量校准通讯录，补齐新注册用户。
+const USER_LIST_REFRESH_INTERVAL_MS = 15_000;
+
+const SUPPORTED_IMAGE_EXTENSIONS = new Set([
+  "gif",
+  "jpeg",
+  "jpg",
+  "png",
+  "webp"
+]);
+
+const SUPPORTED_VIDEO_EXTENSIONS = new Set([
+  "mov",
+  "mp4",
+  "webm"
+]);
+
 interface IPendingMessage {
   clientMsgId: string;
   content: IDataMessage["content"];
   conversationId: number;
   messageType: IDataMessage["message_type"];
   timeoutId?: number;
+}
+
+function getFileExtension(filename: string): string {
+  return filename.split(".").at(-1)?.toLocaleLowerCase("en-US") || "";
+}
+
+function pickUploadResourceType(file: File): "image" | "video" | null {
+  if (file.type.startsWith("image/")) {
+    return "image";
+  }
+
+  if (file.type.startsWith("video/")) {
+    return "video";
+  }
+
+  const extension = getFileExtension(file.name);
+
+  if (SUPPORTED_IMAGE_EXTENSIONS.has(extension)) {
+    return "image";
+  }
+
+  if (SUPPORTED_VIDEO_EXTENSIONS.has(extension)) {
+    return "video";
+  }
+
+  return null;
+}
+
+function getUserListSignature(userList: IDataListUsers): string {
+  return userList.map(user => {
+    return [
+      user.id,
+      user.username || "",
+      user.nickname || "",
+      user.avatar_url || "",
+      user.status || 0
+    ].join(":");
+  }).join("|");
+}
+
+function dataListAllUsers(): Promise<IDataListUsers> {
+  return dataListUsers({
+    all: true
+  });
 }
 
 // 消息接口按倒序分页返回，视图层统一使用升序，避免多个调用点各自维护排序规则。
@@ -217,6 +278,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const conversationsRef = useRef<IDataConversationListItem[]>([]);
 
+  const usersRef = useRef<IDataListUsers>([]);
+
   // ack 和 deliver 可能都返回同一条消息；这里记录刚确认过的消息，降低重复刷新概率。
   const ackedMessageIdsRef = useRef<Set<number>>(new Set());
 
@@ -231,6 +294,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const activeConversationRequestRef = useRef(0);
 
   const reconcileInFlightRef = useRef<Promise<void> | null>(null);
+
+  const userListRefreshInFlightRef = useRef<Promise<IDataListUsers | null> | null>(null);
 
   // 退出登录会清除 token；异步初始化链在每次继续请求前通过此标记及时停止。
   const isLoggingOutRef = useRef(false);
@@ -326,6 +391,11 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ] = useState(false);
 
   const [
+    resourceUploading,
+    setResourceUploading
+  ] = useState(false);
+
+  const [
     directModalOpen,
     setDirectModalOpen
   ] = useState(false);
@@ -415,6 +485,19 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setConversations(conversationList);
 
     return conversationList;
+  }, []);
+
+  const applyUserList = useCallback((userList: IDataListUsers, force = false): boolean => {
+    const hasChanged = force || getUserListSignature(usersRef.current) !== getUserListSignature(userList);
+
+    if (!hasChanged) {
+      return false;
+    }
+
+    usersRef.current = userList;
+    setUsers(userList);
+
+    return true;
   }, []);
 
   const scheduleConversationRefresh = useCallback((fallback: string): void => {
@@ -607,6 +690,45 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     })));
   }, []);
 
+  const refreshAllUserList = useCallback((refreshPresence = false): Promise<IDataListUsers | null> => {
+    if (isLoggingOutRef.current) {
+      return Promise.resolve(null);
+    }
+
+    if (userListRefreshInFlightRef.current) {
+      return userListRefreshInFlightRef.current;
+    }
+
+    const refreshTask = (async (): Promise<IDataListUsers | null> => {
+
+      // 只有 all=true 的 /api/users 全量通讯录请求，才参与自动及时刷新。
+      const userList = await dataListAllUsers();
+
+      if (isLoggingOutRef.current) {
+        return null;
+      }
+
+      const hasChanged = applyUserList(userList);
+
+      if (hasChanged || refreshPresence) {
+        await loadPresence(userList);
+      }
+
+      return userList;
+    })();
+
+    userListRefreshInFlightRef.current = refreshTask;
+
+    return refreshTask.finally(() => {
+      if (userListRefreshInFlightRef.current === refreshTask) {
+        userListRefreshInFlightRef.current = null;
+      }
+    });
+  }, [
+    applyUserList,
+    loadPresence
+  ]);
+
   const loadInitialData = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     setErrorNotice("");
@@ -621,7 +743,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       ] = await Promise.all([
         dataGetCurrentUser(),
         loadConversations(),
-        dataListUsers()
+        dataListAllUsers()
       ]);
 
       if (isLoggingOutRef.current) {
@@ -629,7 +751,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       }
 
       setCurrentUser(userData);
-      setUsers(userList);
+      applyUserList(userList, true);
 
       // 在线状态和设备上报不阻塞首屏；设备上报成功后会顺带刷新设备列表。
       void loadPresence(userList).catch(error => {
@@ -654,6 +776,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     loadConversations,
     loadPresence,
+    applyUserList,
     reportError,
     upsertCurrentDevice
   ]);
@@ -1060,7 +1183,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     reportError
   ]);
 
-  const sendOptimisticMessage = useCallback(async (content: IDataMessage["content"]): Promise<void> => {
+  const sendOptimisticMessage = useCallback(async (
+      content: IDataMessage["content"],
+      messageType: IDataMessage["message_type"] = "text"
+  ): Promise<void> => {
     if (!activeConversationId || !currentUser?.id || !content) {
       return;
     }
@@ -1073,18 +1199,19 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       clientMsgId,
       content,
       conversationId: activeConversationId,
-      messageType: "text"
+      messageType: messageType || "text"
     };
 
     const localMessage = createLocalSendingMessage({
       clientMsgId,
       content,
       conversationId: activeConversationId,
-      messageType: "text",
+      messageType: messageType || "text",
       senderId: currentUser.id
     });
 
     // 先乐观插入本地消息，保证回车后界面即时响应。
+    setSending(true);
     setMessages(currentMessages => {
       return mergeMessage(currentMessages, localMessage);
     });
@@ -1093,7 +1220,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         client_msg_id: clientMsgId,
         content,
         conversation_id: activeConversationId,
-        message_type: "text"
+        message_type: messageType || "text"
       },
       request_id: requestId,
       type: "message.send"
@@ -1133,9 +1260,50 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     setDraftText("");
     await sendOptimisticMessage({
       text: trimmedText
-    });
+    }, "text");
   }, [
     draftText,
+    sendOptimisticMessage
+  ]);
+
+  const handleSendResource = useCallback(async (file: File): Promise<void> => {
+    if (!activeConversationId) {
+      message.warning("请先选择一个会话");
+
+      return;
+    }
+
+    const resourceType = pickUploadResourceType(file);
+
+    if (!resourceType) {
+      message.warning("当前只支持发送 jpg、png、gif、webp、mp4、mov、webm");
+
+      return;
+    }
+
+    setResourceUploading(true);
+
+    try {
+      const resource = await dataUploadResource({
+        file,
+        type: resourceType
+      });
+
+      await sendOptimisticMessage({
+        name: file.name,
+        size: file.size,
+        type: resource.type,
+        url: resource.url
+      }, resource.type === "image" ? "image" : "file");
+    } catch (error) {
+      reportError(error, "文件发送失败");
+    } finally {
+      setResourceUploading(false);
+    }
+  }, [
+    activeConversationId,
+    message,
+    reportError,
     sendOptimisticMessage
   ]);
 
@@ -1143,8 +1311,12 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     if (
       !messageItem.client_msg_id ||
       messageItem.status !== "failed" ||
-      (messageItem.message_type || "text") !== "text" ||
-      typeof messageItem.content?.text !== "string"
+      !messageItem.content ||
+      ![
+        "file",
+        "image",
+        "text"
+      ].includes(messageItem.message_type || "text")
     ) {
       return;
     }
@@ -1160,11 +1332,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     await sendMessageByHttp({
       clientMsgId: messageItem.client_msg_id,
-      content: {
-        text: messageItem.content.text
-      },
+      content: messageItem.content,
       conversationId: messageItem.conversation_id,
-      messageType: "text"
+      messageType: messageItem.message_type || "text"
     });
   }, [
     sendMessageByHttp
@@ -1261,14 +1431,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
           userList
         ] = await Promise.all([
           loadConversations(),
-          dataListUsers()
+          dataListAllUsers()
         ]);
 
         if (isLoggingOutRef.current) {
           return;
         }
 
-        setUsers(userList);
+        applyUserList(userList, true);
         await loadPresence(userList);
 
         if (activeConversationId && !isLoggingOutRef.current) {
@@ -1291,10 +1461,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     loadActiveConversation,
     loadConversations,
     loadPresence,
+    applyUserList,
     reportError
   ]);
 
   useEffect(() => {
+    isLoggingOutRef.current = false;
+
     void loadInitialData();
   }, [
     loadInitialData
@@ -1331,6 +1504,30 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     };
   }, [
     reconcileRealtimeSnapshots
+  ]);
+
+  useEffect(() => {
+    if (!currentUser?.id) {
+      return undefined;
+    }
+
+    const refreshTimer = window.setInterval(() => {
+      if (document.visibilityState !== "visible" || isLoggingOutRef.current) {
+        return;
+      }
+
+      void refreshAllUserList().catch(error => {
+        reportError(error, "用户列表自动更新失败");
+      });
+    }, USER_LIST_REFRESH_INTERVAL_MS);
+
+    return () => {
+      window.clearInterval(refreshTimer);
+    };
+  }, [
+    currentUser?.id,
+    refreshAllUserList,
+    reportError
   ]);
 
   useEffect(() => {
@@ -1376,11 +1573,17 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   useEffect(() => {
-    const wsEvent = lastEvent;
+    usersRef.current = users;
+  }, [
+    users
+  ]);
 
+  useEffect(() => {
     if (isLoggingOutRef.current) {
       return;
     }
+
+    const wsEvent = lastEvent;
 
     if (wsEvent?.type === "presence.changed") {
       const presence = pickWsPresence(wsEvent.payload);
@@ -1389,6 +1592,16 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         setPresences(currentPresences => {
           return mergePresence(currentPresences, presence);
         });
+
+        const isKnownUser = usersRef.current.some(user => {
+          return user.id === presence.user_id;
+        });
+
+        if (!isKnownUser) {
+          void refreshAllUserList(true).catch(error => {
+            reportError(error, "用户列表自动更新失败");
+          });
+        }
       }
 
       return;
@@ -1507,6 +1720,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     isRecentlyAckedMessage,
     lastEvent,
     rememberAckedMessage,
+    refreshAllUserList,
     reportError,
     scheduleConversationRefresh
   ]);
@@ -1546,6 +1760,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     messageLoading,
     messages,
     presences,
+    resourceUploading,
     searchResults,
     searchText,
     selectedDirectUserId,
@@ -1589,6 +1804,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleRemoveMember,
     handleSearch,
     handleSelectConversation,
+    handleSendResource,
     handleSendMessage,
     handleRetryMessage,
     handleUpdateGroupProfile,

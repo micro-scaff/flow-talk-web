@@ -118,6 +118,22 @@ function isTextMessage(messageItem: IDataMessage): boolean {
   return (messageItem.message_type || "text") === "text" && typeof messageItem.content?.text === "string";
 }
 
+function isImageMessage(messageItem: IDataMessage): boolean {
+  return messageItem.message_type === "image" && typeof messageItem.content?.url === "string";
+}
+
+function isFileMessage(messageItem: IDataMessage): boolean {
+  return messageItem.message_type === "file" && typeof messageItem.content?.url === "string";
+}
+
+function isVideoMessage(messageItem: IDataMessage): boolean {
+  return messageItem.message_type === "video" && typeof messageItem.content?.url === "string";
+}
+
+function isRenderableMessage(messageItem: IDataMessage): boolean {
+  return isTextMessage(messageItem) || isImageMessage(messageItem) || isFileMessage(messageItem) || isVideoMessage(messageItem);
+}
+
 function readMessageText(messageItem?: IDataMessage): string {
   if (!messageItem?.content) {
     return "[空消息]";
@@ -125,6 +141,18 @@ function readMessageText(messageItem?: IDataMessage): string {
 
   if (typeof messageItem.content.text === "string") {
     return messageItem.content.text;
+  }
+
+  if (messageItem.message_type === "image" && typeof messageItem.content.url === "string") {
+    return "[图片]";
+  }
+
+  if (messageItem.message_type === "file" && typeof messageItem.content.url === "string") {
+    return `[文件] ${typeof messageItem.content.name === "string" ? messageItem.content.name : "资源文件"}`;
+  }
+
+  if (messageItem.message_type === "video" && typeof messageItem.content.url === "string") {
+    return `[视频] ${typeof messageItem.content.name === "string" ? messageItem.content.name : "视频资源"}`;
   }
 
   return "[空消息]";
@@ -349,8 +377,12 @@ export {
   getDirectConversationPeerId,
   getUserName,
   hasMessage,
+  isFileMessage,
   isFormValidationError,
+  isImageMessage,
+  isRenderableMessage,
   isTextMessage,
+  isVideoMessage,
   markMessageFailed,
   mergeMessage,
   mergePresence,
