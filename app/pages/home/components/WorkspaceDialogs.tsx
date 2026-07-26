@@ -15,7 +15,6 @@ import {
   Modal,
   Select,
   Space,
-  Typography,
   Upload
 } from "antd";
 import type {
@@ -34,10 +33,6 @@ import {
 import {
   ConversationDetailPanel
 } from "./ConversationDetailPanel";
-
-const {
-  Text
-} = Typography;
 
 interface IWorkspaceDialogsProps {
   viewModel: IHomeWorkbenchViewModel;

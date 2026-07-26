@@ -406,6 +406,10 @@ textarea {
   margin-top: 8px;
 }
 
+.auth-secondary-link.link-action {
+  margin-top: 16px;
+}
+
 .auth-form-separator {
   display: flex;
   margin: 28px 0 14px;
@@ -661,15 +665,24 @@ textarea {
 }
 
 .flow-brand-row {
-  height: 48px;
+  display: flex;
+  min-height: 52px;
+  height: auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .flow-brand-lockup {
-  gap: 11px;
+  min-width: max-content;
+  flex: 0 0 auto;
+  gap: 12px;
 }
 
 .flow-brand-button {
-  border-radius: 10px;
+  padding: 5px 7px 5px 5px;
+  margin: -5px 0 -5px -5px;
+  border-radius: 12px;
 }
 
 .flow-brand-button:hover {
@@ -678,15 +691,21 @@ textarea {
 
 .flow-brand-mark {
   position: relative;
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border: 0;
   border-radius: 50%;
   background: var(--flow-primary);
   box-shadow: none;
   color: var(--flow-primary-contrast);
   font-family: var(--font-display);
+  font-size: 14px;
   letter-spacing: -0.08em;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.flow-brand-button:hover .flow-brand-mark {
+  transform: translateY(-1px) scale(1.025);
 }
 
 .flow-brand-mark::after {
@@ -703,7 +722,27 @@ textarea {
 
 .flow-brand-title.ant-typography {
   font-family: var(--font-display);
+  font-size: 22px !important;
+  line-height: 0.95 !important;
   letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.flow-brand-copy {
+  display: grid;
+  min-width: max-content;
+  gap: 5px;
+}
+
+.flow-brand-subtitle.ant-typography {
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.flow-brand-actions.ant-space {
+  flex: 0 0 auto;
 }
 
 .flow-muted-text.ant-typography {
@@ -725,9 +764,9 @@ textarea {
 }
 
 .flow-icon-button.ant-btn {
-  width: 36px;
-  min-width: 36px;
-  height: 36px;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -1367,6 +1406,29 @@ textarea {
     min-width: 304px !important;
     max-width: 304px !important;
     flex-basis: 304px !important;
+  }
+
+  .flow-brand-row {
+    gap: 8px;
+  }
+
+  .flow-brand-lockup {
+    gap: 10px;
+  }
+
+  .flow-brand-mark {
+    width: 38px;
+    height: 38px;
+  }
+
+  .flow-brand-title.ant-typography {
+    font-size: 20px !important;
+  }
+
+  .flow-brand-actions .flow-icon-button.ant-btn {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
   }
 
   .flow-default-screen {

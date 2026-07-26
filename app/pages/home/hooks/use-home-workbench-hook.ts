@@ -232,6 +232,9 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const reconcileInFlightRef = useRef<Promise<void> | null>(null);
 
+  // 退出登录会清除 token；异步初始化链在每次继续请求前通过此标记及时停止。
+  const isLoggingOutRef = useRef(false);
+
   const [
     currentUser,
     setCurrentUser
@@ -402,7 +405,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const activeTitle = getConversationTitle(activeConversation || activeConversationListItem);
 
   const reportError = useCallback((error: unknown, fallback: string): void => {
-    if (isFormValidationError(error)) {
+    if (isLoggingOutRef.current || isFormValidationError(error)) {
       return;
     }
 
@@ -524,13 +527,21 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const loadDevices = useCallback(async (): Promise<void> => {
+    if (isLoggingOutRef.current) {
+      return;
+    }
+
     const deviceList = await dataDeviceList();
+
+    if (isLoggingOutRef.current) {
+      return;
+    }
 
     setDevices(deviceList);
   }, []);
 
   const upsertCurrentDevice = useCallback(async (showSuccess: boolean, userId = currentUser?.id): Promise<void> => {
-    if (!userId) {
+    if (!userId || isLoggingOutRef.current) {
       return;
     }
 
@@ -546,9 +557,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         user_id: userId
       });
 
+      if (isLoggingOutRef.current) {
+        return;
+      }
+
       await loadDevices();
 
-      if (showSuccess) {
+      if (showSuccess && !isLoggingOutRef.current) {
         message.success("当前设备已上报");
       }
     } catch (error) {
@@ -565,6 +580,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const loadPresence = useCallback(async (userList: IDataListUsers): Promise<void> => {
+    if (isLoggingOutRef.current) {
+      return;
+    }
+
     const userIds = userList.
         map(user => {
           return user.id;
@@ -580,6 +599,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     const presenceList = await dataBatchPresence({
       user_ids: userIds
     });
+
+    if (isLoggingOutRef.current) {
+      return;
+    }
 
     setPresences(Object.fromEntries(presenceList.map(item => {
       return [
@@ -606,6 +629,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         dataListUsers()
       ]);
 
+      if (isLoggingOutRef.current) {
+        return false;
+      }
+
       setCurrentUser(userData);
       setUsers(userList);
 
@@ -615,11 +642,17 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       });
       void upsertCurrentDevice(false, userData.id);
     } catch (error) {
+      if (isLoggingOutRef.current) {
+        return false;
+      }
+
       reportError(error, "工作台数据加载失败");
 
       return false;
     } finally {
-      setLoading(false);
+      if (!isLoggingOutRef.current) {
+        setLoading(false);
+      }
     }
 
     return true;
@@ -1226,6 +1259,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleLogout = useCallback((): void => {
+    isLoggingOutRef.current = true;
+
+    if (refreshConversationsTimerRef.current) {
+      window.clearTimeout(refreshConversationsTimerRef.current);
+      refreshConversationsTimerRef.current = null;
+    }
+
+    setErrorNotice("");
     clearSession();
     navigate("/login", {
       replace: true
@@ -1235,6 +1276,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const reconcileRealtimeSnapshots = useCallback((): Promise<void> => {
+
+    if (isLoggingOutRef.current) {
+      return Promise.resolve();
+    }
 
     // 重连和 visibilitychange 可能同时触发；共享同一个任务可以避免重复拉取整套 HTTP 快照。
     if (reconcileInFlightRef.current) {
@@ -1251,10 +1296,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
           dataListUsers()
         ]);
 
+        if (isLoggingOutRef.current) {
+          return;
+        }
+
         setUsers(userList);
         await loadPresence(userList);
 
-        if (activeConversationId) {
+        if (activeConversationId && !isLoggingOutRef.current) {
           await loadActiveConversation(activeConversationId);
         }
       } catch (error) {
@@ -1302,7 +1351,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   useEffect(() => {
     const handleVisibilityChange = (): void => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && !isLoggingOutRef.current) {
         void reconcileRealtimeSnapshots();
       }
     };
@@ -1360,6 +1409,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   useEffect(() => {
     const wsEvent = lastEvent;
+
+    if (isLoggingOutRef.current) {
+      return;
+    }
 
     if (wsEvent?.type === "presence.changed") {
       const presence = pickWsPresence(wsEvent.payload);
@@ -1492,6 +1545,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   useEffect(() => {
     return () => {
+      isLoggingOutRef.current = true;
+
       if (refreshConversationsTimerRef.current) {
         window.clearTimeout(refreshConversationsTimerRef.current);
       }

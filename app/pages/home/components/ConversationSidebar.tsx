@@ -219,22 +219,23 @@ function ConversationSidebar({
               }}>
               <div className="flow-brand-mark">FT</div>
 
-              <div className="min-w-0">
+              <div className="flow-brand-copy">
                 <Title
-                  className="flow-brand-title !mb-0 !text-[20px] !font-black !leading-none"
+                  className="flow-brand-title !mb-0 !font-black"
                   level={1}>
                   Flow Talk
                 </Title>
 
                 <Text
-                  className="flow-muted-text mt-1 block max-w-48 text-sm font-semibold"
-                  ellipsis>
+                  className="flow-brand-subtitle flow-muted-text block font-semibold">
                   流言正在发生
                 </Text>
               </div>
             </div>
 
-            <Space size={4}>
+            <Space
+              className="flow-brand-actions"
+              size={3}>
               <Tooltip title={isDark ? "切换到白天模式" : "切换到黑夜模式"}>
                 <Button
                   aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}
