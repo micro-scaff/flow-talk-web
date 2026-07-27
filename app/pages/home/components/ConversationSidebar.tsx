@@ -396,6 +396,17 @@ function ConversationSidebar({
                         void actions.handleRefresh();
                       }} />
                   </Tooltip>
+
+                  <Tooltip title="创建群聊">
+                    <Button
+                      aria-label="创建群聊"
+                      className="flow-mobile-create-group-button flow-icon-button"
+                      icon={<TeamOutlined />}
+                      shape="circle"
+                      size="small"
+                      type="primary"
+                      onClick={actions.handleOpenGroupCreate} />
+                  </Tooltip>
                 </Space>
               </div>
 

@@ -939,6 +939,10 @@ textarea {
   height: 30px;
 }
 
+.flow-mobile-create-group-button.ant-btn {
+  display: none;
+}
+
 .flow-contact-list {
   height: auto;
   gap: 2px;
@@ -2442,6 +2446,10 @@ textarea {
     border-radius: 12px;
   }
 
+  .flow-sidebar-header > .flow-search-input.ant-input-affix-wrapper {
+    display: none;
+  }
+
   .flow-search-input input {
     font-size: 16px;
   }
@@ -2461,6 +2469,20 @@ textarea {
   .flow-list-title .ant-tag {
     min-height: 22px;
     padding: 0 8px;
+  }
+
+  .flow-mobile-create-group-button.ant-btn {
+    display: inline-flex;
+    border-color: var(--flow-text);
+    background: var(--flow-text);
+    color: var(--flow-surface-elevated);
+  }
+
+  .flow-mobile-create-group-button.ant-btn:hover,
+  .flow-mobile-create-group-button.ant-btn:focus-visible {
+    border-color: var(--flow-primary) !important;
+    background: var(--flow-primary) !important;
+    color: var(--flow-primary-contrast) !important;
   }
 
   .flow-list-eyebrow {
@@ -2575,7 +2597,7 @@ textarea {
   }
 
   .flow-mobile-search-button.ant-btn {
-    display: inline-flex;
+    display: none;
   }
 
   .flow-device-button.ant-btn {
@@ -2589,7 +2611,7 @@ textarea {
   }
 
   .flow-mobile-search-tray {
-    display: block;
+    display: none;
     width: 100%;
     max-width: 100%;
     flex: 0 0 100%;
