@@ -89,11 +89,11 @@ function readPresenceSignature(presences: Record<number, IDataPresence>, convers
 
   const userIds = conversation.type === "direct"
     ? [
-        getDirectConversationPeerId(conversation, currentUserId)
-      ]
+      getDirectConversationPeerId(conversation, currentUserId)
+    ]
     : conversation.members?.map(member => {
-        return member.user_id;
-      }) || [];
+      return member.user_id;
+    }) || [];
 
   return userIds.
       filter((userId): userId is number => {
@@ -183,11 +183,13 @@ function WorkspaceHeader({
 
   const connectionColor = connectionColors[state.wsStatus];
 
-  const headerDescription = isDirectConversation
-    ? (directPresence?.online ? "在线" : "离线")
-    : headerConversation?.members?.length
-      ? `${groupMemberCount} 位成员 · ${groupOnlineCount} 人在线`
-      : `${groupMemberCount} 位成员`;
+  let headerDescription = `${groupMemberCount} 位成员`;
+
+  if (isDirectConversation) {
+    headerDescription = directPresence?.online ? "在线" : "离线";
+  } else if (headerConversation?.members?.length) {
+    headerDescription = `${groupMemberCount} 位成员 · ${groupOnlineCount} 人在线`;
+  }
 
   return (
     <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"} ${mobileSearchOpen ? "is-mobile-search-open" : ""}`}>

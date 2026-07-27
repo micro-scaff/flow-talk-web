@@ -101,30 +101,58 @@ function ChatMessageSkeleton(): ReactElement {
   const skeletonRows = [
     {
       align: "peer",
+      id: "peer-opening",
       lines: [
-        "44%",
-        "62%"
+        {
+          id: "peer-opening-primary",
+          width: "44%"
+        },
+        {
+          id: "peer-opening-secondary",
+          width: "62%"
+        }
       ]
     },
     {
       align: "mine",
+      id: "mine-opening",
       lines: [
-        "38%"
+        {
+          id: "mine-opening-primary",
+          width: "38%"
+        }
       ]
     },
     {
       align: "peer",
+      id: "peer-detail",
       lines: [
-        "56%",
-        "48%",
-        "30%"
+        {
+          id: "peer-detail-primary",
+          width: "56%"
+        },
+        {
+          id: "peer-detail-secondary",
+          width: "48%"
+        },
+        {
+          id: "peer-detail-tertiary",
+          width: "30%"
+        }
       ]
     },
     {
       align: "mine",
+      id: "mine-detail",
       lines: [
-        "52%",
-        "34%"
+        {
+          id: "mine-detail-primary",
+          width: "52%"
+        },
+        {
+          id: "mine-detail-secondary",
+          width: "34%"
+        }
       ]
     }
   ];
@@ -134,12 +162,12 @@ function ChatMessageSkeleton(): ReactElement {
       aria-label="正在加载流言"
       className="flow-chat-skeleton"
       role="status">
-      {skeletonRows.map((row, rowIndex) => {
+      {skeletonRows.map(row => {
         const isMine = row.align === "mine";
 
         return (
           <div
-            key={`${row.align}-${rowIndex}`}
+            key={row.id}
             className={`flow-chat-skeleton-row ${isMine ? "is-mine" : "is-peer"}`}>
             {!isMine && (
               <span className="flow-chat-skeleton-avatar" />
@@ -148,13 +176,13 @@ function ChatMessageSkeleton(): ReactElement {
             <span className="flow-chat-skeleton-bubble">
               <span className="flow-chat-skeleton-meta" />
 
-              {row.lines.map((width, lineIndex) => {
+              {row.lines.map(line => {
                 return (
                   <span
-                    key={`${width}-${lineIndex}`}
+                    key={line.id}
                     className="flow-chat-skeleton-line"
                     style={{
-                      width
+                      width: line.width
                     }} />
                 );
               })}
