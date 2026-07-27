@@ -15,6 +15,8 @@ import type {
   ReactNode
 } from "react";
 
+import zhCN from "antd/locale/zh_CN";
+
 import type {
   TThemeMode
 } from "~/model/theme.model";
@@ -155,7 +157,9 @@ export function ThemeProvider({
 
   return (
     <ThemeViewModelContext value={contextValue}>
-      <ConfigProvider theme={antdTheme}>
+      <ConfigProvider
+        locale={zhCN}
+        theme={antdTheme}>
         <App>
           <AppMessageBridge />
           {children}
