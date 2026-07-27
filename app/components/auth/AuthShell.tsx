@@ -10,6 +10,9 @@ import type {
   ReactElement,
   ReactNode
 } from "react";
+import {
+  useEffect
+} from "react";
 
 import {
   useThemeHook
@@ -34,6 +37,110 @@ export function AuthShell({
     isDark,
     toggleTheme
   } = useThemeHook();
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const listenerOptions = {
+      capture: true
+    };
+
+    let resetTimeoutIds: number[] = [];
+
+    document.body.dataset.authRoute = "true";
+    root.dataset.authRoute = "true";
+
+    const syncAuthViewport = (): void => {
+      const {
+        visualViewport
+      } = window;
+
+      const viewportWidth = Math.floor(visualViewport?.width || window.innerWidth);
+
+      const viewportHeight = Math.floor(visualViewport?.height || window.innerHeight);
+
+      const viewportLeft = Math.floor(visualViewport?.offsetLeft || 0);
+
+      root.style.setProperty("--auth-viewport-width", `${viewportWidth}px`);
+      root.style.setProperty("--auth-viewport-height", `${viewportHeight}px`);
+      root.style.setProperty("--auth-viewport-left", `${viewportLeft}px`);
+    };
+
+    const clearScheduledResets = (): void => {
+      for (const timeoutId of resetTimeoutIds) {
+        window.clearTimeout(timeoutId);
+      }
+
+      resetTimeoutIds = [];
+    };
+
+    const resetHorizontalScroll = (): void => {
+      syncAuthViewport();
+
+      const authPage = document.querySelector<HTMLElement>(".auth-page");
+
+      const appRoot = document.querySelector<HTMLElement>("#root");
+
+      root.scrollLeft = 0;
+      document.body.scrollLeft = 0;
+      appRoot?.scrollTo({
+        left: 0,
+        top: appRoot.scrollTop
+      });
+      authPage?.scrollTo({
+        left: 0,
+        top: authPage.scrollTop
+      });
+      window.scrollTo({
+        left: 0,
+        top: window.scrollY
+      });
+    };
+
+    const scheduleResetHorizontalScroll = (): void => {
+      clearScheduledResets();
+      syncAuthViewport();
+      resetHorizontalScroll();
+
+      for (const delay of [
+        0,
+        80,
+        180,
+        360
+      ]) {
+        const timeoutId = window.setTimeout(resetHorizontalScroll, delay);
+
+        resetTimeoutIds.push(timeoutId);
+      }
+    };
+
+    const handleFocusIn = (event: FocusEvent): void => {
+      if (!(event.target instanceof HTMLElement) || !event.target.closest(".auth-page")) {
+        return;
+      }
+
+      scheduleResetHorizontalScroll();
+    };
+
+    syncAuthViewport();
+    document.addEventListener("focusin", handleFocusIn, listenerOptions);
+    window.visualViewport?.addEventListener("resize", scheduleResetHorizontalScroll);
+    window.visualViewport?.addEventListener("scroll", scheduleResetHorizontalScroll);
+    window.addEventListener("resize", scheduleResetHorizontalScroll);
+
+    return () => {
+      clearScheduledResets();
+      document.removeEventListener("focusin", handleFocusIn, listenerOptions);
+      window.visualViewport?.removeEventListener("resize", scheduleResetHorizontalScroll);
+      window.visualViewport?.removeEventListener("scroll", scheduleResetHorizontalScroll);
+      window.removeEventListener("resize", scheduleResetHorizontalScroll);
+      root.style.removeProperty("--auth-viewport-width");
+      root.style.removeProperty("--auth-viewport-height");
+      root.style.removeProperty("--auth-viewport-left");
+      delete document.body.dataset.authRoute;
+      delete root.dataset.authRoute;
+    };
+  }, []);
 
   return (
     <main className="auth-page">

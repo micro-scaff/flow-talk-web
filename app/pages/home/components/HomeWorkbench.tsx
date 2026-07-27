@@ -5,6 +5,9 @@ import {
 import type {
   ReactElement
 } from "react";
+import {
+  useEffect
+} from "react";
 
 import type {
   IHomeWorkbenchViewModel
@@ -42,6 +45,42 @@ function HomeWorkbench({
   } = viewModel;
 
   const isContactMode = state.contactListVisible;
+
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const syncWorkbenchViewport = (): void => {
+      const {
+        visualViewport
+      } = window;
+
+      const viewportWidth = Math.floor(visualViewport?.width || window.innerWidth);
+
+      const viewportHeight = Math.floor(visualViewport?.height || window.innerHeight);
+
+      const viewportLeft = Math.floor(visualViewport?.offsetLeft || 0);
+
+      root.style.setProperty("--flow-viewport-width", `${viewportWidth}px`);
+      root.style.setProperty("--flow-viewport-height", `${viewportHeight}px`);
+      root.style.setProperty("--flow-viewport-left", `${viewportLeft}px`);
+    };
+
+    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(syncWorkbenchViewport);
+
+    syncWorkbenchViewport();
+    resizeObserver?.observe(root);
+    window.visualViewport?.addEventListener("resize", syncWorkbenchViewport);
+    window.visualViewport?.addEventListener("scroll", syncWorkbenchViewport);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.visualViewport?.removeEventListener("resize", syncWorkbenchViewport);
+      window.visualViewport?.removeEventListener("scroll", syncWorkbenchViewport);
+      root.style.removeProperty("--flow-viewport-width");
+      root.style.removeProperty("--flow-viewport-height");
+      root.style.removeProperty("--flow-viewport-left");
+    };
+  }, []);
 
   return (
     <main className={`flow-workbench ${isContactMode ? "is-mobile-contact-mode" : ""}`}>
