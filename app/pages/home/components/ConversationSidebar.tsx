@@ -4,7 +4,8 @@ import {
   MoonOutlined,
   ReloadOutlined,
   SearchOutlined,
-  SunOutlined
+  SunOutlined,
+  TeamOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -37,6 +38,7 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
+  getConversationDisplayTitle,
   getDirectConversationPeerId,
   getUserName
 } from "../utils";
@@ -130,6 +132,55 @@ function ConversationSidebar({
     normalizedKeyword
   ]);
 
+  const groupConversations = useMemo(() => {
+    const availableGroups = state.conversations.filter(conversation => {
+      if (conversation.type !== "group") {
+        return false;
+      }
+
+      if (!conversation.members?.length) {
+        return true;
+      }
+
+      return conversation.members.some(member => {
+        return member.user_id === state.currentUser?.id && member.status === "active";
+      });
+    });
+
+    return sortCopy(availableGroups, (source, target) => {
+      const sourceLastMessageAt = source.last_message_at ? new Date(source.last_message_at).getTime() : 0;
+
+      const targetLastMessageAt = target.last_message_at ? new Date(target.last_message_at).getTime() : 0;
+
+      if (sourceLastMessageAt !== targetLastMessageAt) {
+        return targetLastMessageAt - sourceLastMessageAt;
+      }
+
+      return getConversationDisplayTitle(source, state.currentUser?.id, state.users).localeCompare(getConversationDisplayTitle(target, state.currentUser?.id, state.users), "zh-CN");
+    });
+  }, [
+    state.conversations,
+    state.currentUser?.id,
+    state.users
+  ]);
+
+  const visibleGroupConversations = useMemo(() => {
+    if (!normalizedKeyword) {
+      return groupConversations;
+    }
+
+    return groupConversations.filter(conversation => {
+      const searchableText = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users).toLocaleLowerCase("zh-CN");
+
+      return searchableText.includes(normalizedKeyword);
+    });
+  }, [
+    groupConversations,
+    normalizedKeyword,
+    state.currentUser?.id,
+    state.users
+  ]);
+
   const directConversationByUserId = useMemo(() => {
     const conversationMap = new Map<number, IDataConversationListItem>();
 
@@ -162,6 +213,8 @@ function ConversationSidebar({
   const currentUserName = getUserName(state.currentUser);
 
   const activeDirectUserId = state.activeConversation?.type === "direct" ? getDirectConversationPeerId(state.activeConversation, state.currentUser?.id) : undefined;
+
+  const activeGroupConversationId = state.activeConversation?.type === "group" ? state.activeConversation.id : undefined;
 
   function getContactDescription(userId: number, username?: string): string {
     return [
@@ -299,10 +352,10 @@ function ConversationSidebar({
 
           <Input
             allowClear
-            aria-label="搜索联系人"
+            aria-label="搜索联系人或群聊"
             className="flow-search-input"
             prefix={<SearchOutlined />}
-            placeholder="搜索联系人"
+            placeholder="搜索联系人或群聊"
             value={keyword}
             onChange={event => {
               setKeyword(event.target.value);
@@ -327,7 +380,7 @@ function ConversationSidebar({
 
                 <Space size={4}>
                   <Tag className="m-0 rounded-full px-2 font-bold">
-                    {visibleContacts.length}
+                    {visibleContacts.length + visibleGroupConversations.length}
                   </Tag>
 
                   <Tooltip title="刷新联系人状态">
@@ -346,85 +399,173 @@ function ConversationSidebar({
                 </Space>
               </div>
 
-              {visibleContacts.length > 0 ? (
-                <div className="flow-contact-list">
-                  {visibleContacts.map(user => {
-                    const userId = user.id as number;
+              {visibleGroupConversations.length > 0 && (
+                <div className="flow-contact-section">
+                  <div className="flow-contact-section-heading">
+                    <Text className="flow-list-eyebrow">GROUPS</Text>
 
-                    const isOnline = Boolean(state.presences[userId]?.online);
+                    <Text className="flow-muted-text text-xs">
+                      {visibleGroupConversations.length}
+                      {" "}
+                      个群聊
+                    </Text>
+                  </div>
 
-                    const active = activeDirectUserId === userId;
+                  <div className="flow-contact-list flow-group-chat-list">
+                    {visibleGroupConversations.map(conversation => {
+                      const groupTitle = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users);
 
-                    const unreadCount = directConversationByUserId.get(userId)?.unread_count || 0;
+                      const active = activeGroupConversationId === conversation.id;
 
-                    const isOpening = openingUserId === userId;
+                      const activeMemberCount = conversation.members?.filter(member => {
+                        return member.status === "active";
+                      }).length || conversation.member_count || 0;
 
-                    return (
-                      <button
-                        aria-busy={isOpening}
-                        aria-current={active ? "page" : undefined}
-                        className={`flow-contact-row ${active ? "is-active" : ""}`}
-                        disabled={openingUserId !== null}
-                        key={userId}
-                        type="button"
-                        onClick={() => {
-                          void handleOpenContact(userId);
-                        }}>
-                        <Badge
-                          count={unreadCount}
-                          offset={[
-                            -2,
-                            2
-                          ]}
-                          overflowCount={99}
-                          size="small">
+                      const unreadCount = conversation.unread_count || 0;
+
+                      return (
+                        <button
+                          aria-current={active ? "page" : undefined}
+                          className={`flow-contact-row flow-group-chat-row ${active ? "is-active" : ""}`}
+                          key={conversation.id}
+                          type="button"
+                          onClick={() => {
+                            void actions.handleSelectConversation(conversation.id);
+                          }}>
                           <Badge
-                            color={isOnline ? "#c9366f" : "#a89aa3"}
-                            dot
+                            count={unreadCount}
                             offset={[
-                              -4,
-                              36
-                            ]}>
+                              -2,
+                              2
+                            ]}
+                            overflowCount={99}
+                            size="small">
                             <Avatar
+                              className="flow-group-chat-avatar"
                               size={42}
-                              src={user.avatar_url || undefined}>
-                              {getUserName(user).slice(0, 1)}
+                              src={conversation.avatar_url || undefined}>
+                              {groupTitle.slice(0, 1)}
                             </Avatar>
                           </Badge>
-                        </Badge>
 
-                        <span className="flow-contact-copy">
-                          <span className="flow-contact-heading">
+                          <span className="flow-contact-copy">
+                            <span className="flow-contact-heading">
+                              <Text
+                                className="min-w-0"
+                                strong
+                                ellipsis>
+                                {groupTitle}
+                              </Text>
+                            </span>
+
                             <Text
-                              className="min-w-0"
-                              strong
+                              className="flow-muted-text"
                               ellipsis>
-                              {getUserName(user)}
+                              {`${activeMemberCount} 位成员${unreadCount > 0 ? ` · ${unreadCount} 条未读` : ""}`}
                             </Text>
                           </span>
 
-                          <Text
-                            className="flow-muted-text"
-                            ellipsis>
-                            {isOpening ? "正在打开流言…" : getContactDescription(userId, user.username)}
-                          </Text>
-                        </span>
-                      </button>
-                    );
-                  })}
+                          <TeamOutlined className="flow-group-chat-icon" />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              ) : (
+              )}
+
+              {visibleContacts.length > 0 && (
+                <div className="flow-contact-section">
+                  <div className="flow-contact-section-heading">
+                    <Text className="flow-list-eyebrow">PEOPLE</Text>
+
+                    <Text className="flow-muted-text text-xs">
+                      {visibleContacts.length}
+                      {" "}
+                      位联系人
+                    </Text>
+                  </div>
+
+                  <div className="flow-contact-list">
+                    {visibleContacts.map(user => {
+                      const userId = user.id as number;
+
+                      const isOnline = Boolean(state.presences[userId]?.online);
+
+                      const active = activeDirectUserId === userId;
+
+                      const unreadCount = directConversationByUserId.get(userId)?.unread_count || 0;
+
+                      const isOpening = openingUserId === userId;
+
+                      return (
+                        <button
+                          aria-busy={isOpening}
+                          aria-current={active ? "page" : undefined}
+                          className={`flow-contact-row ${active ? "is-active" : ""}`}
+                          disabled={openingUserId !== null}
+                          key={userId}
+                          type="button"
+                          onClick={() => {
+                            void handleOpenContact(userId);
+                          }}>
+                          <Badge
+                            count={unreadCount}
+                            offset={[
+                              -2,
+                              2
+                            ]}
+                            overflowCount={99}
+                            size="small">
+                            <Badge
+                              color={isOnline ? "#c9366f" : "#a89aa3"}
+                              dot
+                              offset={[
+                                -4,
+                                36
+                              ]}>
+                              <Avatar
+                                size={42}
+                                src={user.avatar_url || undefined}>
+                                {getUserName(user).slice(0, 1)}
+                              </Avatar>
+                            </Badge>
+                          </Badge>
+
+                          <span className="flow-contact-copy">
+                            <span className="flow-contact-heading">
+                              <Text
+                                className="min-w-0"
+                                strong
+                                ellipsis>
+                                {getUserName(user)}
+                              </Text>
+                            </span>
+
+                            <Text
+                              className="flow-muted-text"
+                              ellipsis>
+                              {isOpening ? "正在打开流言…" : getContactDescription(userId, user.username)}
+                            </Text>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {visibleContacts.length === 0 && visibleGroupConversations.length === 0 && (
                 <div className="flow-contact-empty">
                   <div className="flow-empty-avatar">
                     <MessageOutlined />
                   </div>
 
                   <Text className="text-sm font-bold">
-                    {normalizedKeyword ? "未找到匹配结果" : "暂无其他联系人"}
+                    {normalizedKeyword ? "未找到匹配结果" : "暂无联系人或群聊"}
                   </Text>
 
                   <Text className="flow-muted-text mt-1 text-xs">
-                    {normalizedKeyword ? "请尝试姓名或账号" : "等待新用户加入"}
+                    {normalizedKeyword ? "请尝试联系人姓名、账号或群聊名称" : "等待新用户加入，或创建一个群聊"}
                   </Text>
                 </div>
               )}

@@ -6,6 +6,7 @@ import {
 } from "@ant-design/icons";
 import {
   Avatar,
+  Badge,
   Button,
   Checkbox,
   Drawer,
@@ -28,7 +29,8 @@ import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
-  formatDateTime
+  formatDateTime,
+  getUserName
 } from "../utils";
 import {
   ConversationDetailPanel
@@ -61,6 +63,17 @@ function WorkspaceDialogs({
 
   const addableUserOptions = userOptions.filter(option => {
     return !activeMemberIds.has(option.value);
+  });
+
+  const groupMemberOptions = userOptions.map(option => {
+    const user = state.users.find(item => {
+      return item.id === option.value;
+    });
+
+    return {
+      ...option,
+      user
+    };
   });
 
   function getAvatarUploadProps(target: "create" | "profile"): UploadProps {
@@ -161,8 +174,47 @@ function WorkspaceDialogs({
               }
             ]}>
             <Checkbox.Group
-              className="flow-group-member-checkboxes"
-              options={userOptions} />
+              className="flow-group-member-checkboxes">
+              {groupMemberOptions.map(option => {
+                const userName = getUserName(option.user);
+
+                const username = option.user?.username;
+
+                const presence = state.presences[option.value];
+
+                return (
+                  <Checkbox
+                    key={option.value}
+                    value={option.value}>
+                    <span className="flow-group-member-option-content">
+                      <Badge
+                        color={presence?.online ? "green" : "default"}
+                        dot>
+                        <Avatar
+                          className="flow-group-member-avatar"
+                          size={34}
+                          src={option.user?.avatar_url || undefined}>
+                          {userName.slice(0, 1)}
+                        </Avatar>
+                      </Badge>
+
+                      <span className="flow-group-member-option-copy">
+                        <span
+                          className="flow-group-member-option-name"
+                          title={userName}>
+                          {userName}
+                        </span>
+
+                        <span className="flow-group-member-option-meta">
+                          {username ? `@${username}` : `用户 ${option.value}`}
+                          {presence?.online ? " · 在线" : " · 离线"}
+                        </span>
+                      </span>
+                    </span>
+                  </Checkbox>
+                );
+              })}
+            </Checkbox.Group>
           </Form.Item>
         </Form>
       </Modal>
