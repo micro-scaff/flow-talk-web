@@ -1,23 +1,5 @@
 import {
-  LogoutOutlined,
-  MessageOutlined,
-  MoonOutlined,
-  ReloadOutlined,
-  SearchOutlined,
-  SunOutlined,
-  TeamOutlined
-} from "@ant-design/icons";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Input,
-  Layout,
-  Space,
-  Spin,
-  Tag,
-  Tooltip,
-  Typography
+  Layout
 } from "antd";
 import type {
   ReactElement
@@ -42,32 +24,23 @@ import {
   getDirectConversationPeerId,
   getUserName
 } from "../utils";
+import {
+  SidebarHeader
+} from "./conversation-sidebar/SidebarHeader";
+import {
+  SidebarList
+} from "./conversation-sidebar/SidebarList";
+import {
+  normalizeSearchValue,
+  sortCopy
+} from "./conversation-sidebar/sidebar-model";
 
 const {
   Sider
 } = Layout;
 
-const {
-  Text,
-  Title
-} = Typography;
-
 interface IConversationSidebarProps {
   viewModel: IHomeWorkbenchViewModel;
-}
-
-function normalizeSearchValue(value: string): string {
-  return value.trim().toLocaleLowerCase("zh-CN");
-}
-
-function sortCopy<T>(values: readonly T[], compare: (source: T, target: T) => number): T[] {
-  const nextValues = [
-    ...values
-  ];
-
-  // 当前 tsconfig 目标为 ES2022，复制后排序可避免直接修改接口返回数组。
-  // eslint-disable-next-line unicorn/no-array-sort
-  return nextValues.sort(compare);
 }
 
 function ConversationSidebar({
@@ -210,15 +183,9 @@ function ConversationSidebar({
     return total + (conversation.unread_count || 0);
   }, 0);
 
-  const currentUserName = getUserName(state.currentUser);
-
   const activeDirectUserId = state.activeConversation?.type === "direct" ? getDirectConversationPeerId(state.activeConversation, state.currentUser?.id) : undefined;
 
   const activeGroupConversationId = state.activeConversation?.type === "group" ? state.activeConversation.id : undefined;
-
-  function getContactDescription(userId: number, username?: string): string {
-    return username ? `@${username}` : `ID ${userId}`;
-  }
 
   async function handleOpenContact(userId: number): Promise<void> {
     if (openingUserId !== null) {
@@ -231,8 +198,6 @@ function ConversationSidebar({
 
     try {
       if (existingConversation) {
-
-        // 已有单聊直接导航，避免重复请求创建接口并让常用联系人打开得更快。
         await actions.handleSelectConversation(existingConversation.id);
 
         return;
@@ -250,334 +215,27 @@ function ConversationSidebar({
       theme="light"
       width={360}>
       <div className="flow-sidebar-shell">
-        <header className="flow-sidebar-header">
-          <div className="flow-brand-row">
-            <div
-              aria-label="返回联系人首页"
-              className="flow-brand-lockup flow-brand-button"
-              role="button"
-              tabIndex={0}
-              title="返回联系人首页"
-              onClick={actions.handleBackToContactList}
-              onKeyDown={event => {
-                if (event.key !== "Enter" && event.key !== " ") {
-                  return;
-                }
+        <SidebarHeader
+          contactCount={contacts.length}
+          currentUserName={getUserName(state.currentUser)}
+          isDark={isDark}
+          keyword={keyword}
+          onlineContactCount={onlineContactCount}
+          setKeyword={setKeyword}
+          toggleTheme={toggleTheme}
+          totalUnreadCount={totalUnreadCount}
+          viewModel={viewModel} />
 
-                event.preventDefault();
-                actions.handleBackToContactList();
-              }}>
-              <div className="flow-brand-mark">FT</div>
-
-              <div className="flow-brand-copy">
-                <Title
-                  className="flow-brand-title !mb-0 !font-black"
-                  level={1}>
-                  Flow Talk
-                </Title>
-
-                <Text
-                  className="flow-brand-subtitle flow-muted-text block font-semibold">
-                  流言正在发生
-                </Text>
-              </div>
-            </div>
-
-            <Space
-              className="flow-brand-actions"
-              size={3}>
-              <Tooltip title={isDark ? "切换到白天模式" : "切换到黑夜模式"}>
-                <Button
-                  aria-label={isDark ? "切换到白天模式" : "切换到黑夜模式"}
-                  className="flow-icon-button"
-                  icon={isDark ? <SunOutlined /> : <MoonOutlined />}
-                  shape="circle"
-                  onClick={toggleTheme} />
-              </Tooltip>
-
-            </Space>
-          </div>
-
-          <div className="flow-user-card">
-            <Avatar
-              className="flow-user-avatar"
-              size={42}
-              src={state.currentUser?.avatar_url || undefined}>
-              {currentUserName.slice(0, 1)}
-            </Avatar>
-
-            <div className="min-w-0">
-              <Text
-                className="block font-black"
-                ellipsis>
-                {currentUserName}
-              </Text>
-
-              <Text
-                className="flow-muted-text block text-xs"
-                ellipsis>
-                {state.currentUser?.username ? `@${state.currentUser.username}` : `ID ${state.currentUser?.id || "-"}`}
-              </Text>
-            </div>
-
-            <span className="flow-user-mobile-status">
-              <i />
-              {onlineContactCount}
-              {" "}
-              在线
-            </span>
-
-            <Tooltip title="退出登录">
-              <Button
-                aria-label="退出登录"
-                className="flow-account-logout flow-icon-button"
-                icon={<LogoutOutlined />}
-                shape="circle"
-                onClick={actions.handleLogout} />
-            </Tooltip>
-          </div>
-
-          <div className="flow-sidebar-status">
-            <div className="flow-online-summary">
-              <span className="flow-status-dot" />
-
-              <span>
-                {`${contacts.length} 位联系人 · ${onlineContactCount} 人在线${totalUnreadCount > 0 ? ` · ${totalUnreadCount} 条未读` : ""}`}
-              </span>
-            </div>
-          </div>
-
-          <Input
-            allowClear
-            aria-label="搜索联系人或群聊"
-            className="flow-search-input"
-            prefix={<SearchOutlined />}
-            placeholder="搜索联系人或群聊"
-            value={keyword}
-            onChange={event => {
-              setKeyword(event.target.value);
-            }} />
-        </header>
-
-        <Spin
-          className="min-h-0 flex-1"
-          spinning={state.loading}>
-          <div className="flow-sidebar-list-scroll">
-            <section aria-labelledby="contacts-heading">
-              <div className="flow-list-title is-compact">
-                <div>
-                  <Text className="flow-list-eyebrow">CONTACTS</Text>
-
-                  <Text
-                    className="text-base font-black"
-                    id="contacts-heading">
-                    全部联系人
-                  </Text>
-                </div>
-
-                <Space size={4}>
-                  <Tag className="m-0 rounded-full px-2 font-bold">
-                    {visibleContacts.length + visibleGroupConversations.length}
-                  </Tag>
-
-                  <Tooltip title="刷新联系人状态">
-                    <Button
-                      aria-label="刷新联系人状态"
-                      className="flow-contact-refresh flow-icon-button"
-                      icon={<ReloadOutlined />}
-                      loading={state.loading}
-                      shape="circle"
-                      size="small"
-                      type="text"
-                      onClick={() => {
-                        void actions.handleRefresh();
-                      }} />
-                  </Tooltip>
-
-                  <Tooltip title="创建群聊">
-                    <Button
-                      aria-label="创建群聊"
-                      className="flow-mobile-create-group-button flow-icon-button"
-                      icon={<TeamOutlined />}
-                      shape="circle"
-                      size="small"
-                      type="primary"
-                      onClick={actions.handleOpenGroupCreate} />
-                  </Tooltip>
-                </Space>
-              </div>
-
-              {visibleGroupConversations.length > 0 && (
-                <div className="flow-contact-section">
-                  <div className="flow-contact-section-heading">
-                    <Text className="flow-list-eyebrow">GROUPS</Text>
-
-                    <Text className="flow-muted-text text-xs">
-                      {visibleGroupConversations.length}
-                      {" "}
-                      个群聊
-                    </Text>
-                  </div>
-
-                  <div className="flow-contact-list flow-group-chat-list">
-                    {visibleGroupConversations.map(conversation => {
-                      const groupTitle = getConversationDisplayTitle(conversation, state.currentUser?.id, state.users);
-
-                      const active = activeGroupConversationId === conversation.id;
-
-                      const activeMemberCount = conversation.members?.filter(member => {
-                        return member.status === "active";
-                      }).length || conversation.member_count || 0;
-
-                      const unreadCount = conversation.unread_count || 0;
-
-                      return (
-                        <button
-                          aria-current={active ? "page" : undefined}
-                          className={`flow-contact-row flow-group-chat-row ${active ? "is-active" : ""}`}
-                          key={conversation.id}
-                          type="button"
-                          onClick={() => {
-                            void actions.handleSelectConversation(conversation.id);
-                          }}>
-                          <Badge
-                            count={unreadCount}
-                            offset={[
-                              -2,
-                              2
-                            ]}
-                            overflowCount={99}
-                            size="small">
-                            <Avatar
-                              className="flow-group-chat-avatar"
-                              size={42}
-                              src={conversation.avatar_url || undefined}>
-                              {groupTitle.slice(0, 1)}
-                            </Avatar>
-                          </Badge>
-
-                          <span className="flow-contact-copy">
-                            <span className="flow-contact-heading">
-                              <Text
-                                className="min-w-0"
-                                strong
-                                ellipsis>
-                                {groupTitle}
-                              </Text>
-                            </span>
-
-                            <Text
-                              className="flow-muted-text"
-                              ellipsis>
-                              {`${activeMemberCount} 位成员${unreadCount > 0 ? ` · ${unreadCount} 条未读` : ""}`}
-                            </Text>
-                          </span>
-
-                          <TeamOutlined className="flow-group-chat-icon" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {visibleContacts.length > 0 && (
-                <div className="flow-contact-section">
-                  <div className="flow-contact-section-heading">
-                    <Text className="flow-list-eyebrow">PEOPLE</Text>
-
-                    <Text className="flow-muted-text text-xs">
-                      {visibleContacts.length}
-                      {" "}
-                      位联系人
-                    </Text>
-                  </div>
-
-                  <div className="flow-contact-list">
-                    {visibleContacts.map(user => {
-                      const userId = user.id as number;
-
-                      const isOnline = Boolean(state.presences[userId]?.online);
-
-                      const active = activeDirectUserId === userId;
-
-                      const unreadCount = directConversationByUserId.get(userId)?.unread_count || 0;
-
-                      const isOpening = openingUserId === userId;
-
-                      return (
-                        <button
-                          aria-busy={isOpening}
-                          aria-current={active ? "page" : undefined}
-                          className={`flow-contact-row ${active ? "is-active" : ""}`}
-                          disabled={openingUserId !== null}
-                          key={userId}
-                          type="button"
-                          onClick={() => {
-                            void handleOpenContact(userId);
-                          }}>
-                          <Badge
-                            count={unreadCount}
-                            offset={[
-                              -2,
-                              2
-                            ]}
-                            overflowCount={99}
-                            size="small">
-                            <Avatar
-                              size={42}
-                              src={user.avatar_url || undefined}>
-                              {getUserName(user).slice(0, 1)}
-                            </Avatar>
-                          </Badge>
-
-                          <span className="flow-contact-copy">
-                            <span className="flow-contact-heading">
-                              <Text
-                                className="min-w-0"
-                                strong
-                                ellipsis
-                                title={getUserName(user)}>
-                                {getUserName(user)}
-                              </Text>
-
-                              <span className={`flow-contact-presence ${isOnline ? "is-online" : ""}`}>
-                                <i />
-                                {isOnline ? "在线" : "离线"}
-                              </span>
-                            </span>
-
-                            <Text
-                              className="flow-muted-text"
-                              ellipsis>
-                              {isOpening ? "正在打开流言…" : getContactDescription(userId, user.username)}
-                            </Text>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {visibleContacts.length === 0 && visibleGroupConversations.length === 0 && (
-                <div className="flow-contact-empty">
-                  <div className="flow-empty-avatar">
-                    <MessageOutlined />
-                  </div>
-
-                  <Text className="text-sm font-bold">
-                    {normalizedKeyword ? "未找到匹配结果" : "暂无联系人或群聊"}
-                  </Text>
-
-                  <Text className="flow-muted-text mt-1 text-xs">
-                    {normalizedKeyword ? "请尝试联系人姓名、账号或群聊名称" : "等待新用户加入，或创建一个群聊"}
-                  </Text>
-                </div>
-              )}
-            </section>
-          </div>
-        </Spin>
+        <SidebarList
+          activeDirectUserId={activeDirectUserId}
+          activeGroupConversationId={activeGroupConversationId}
+          directConversationByUserId={directConversationByUserId}
+          normalizedKeyword={normalizedKeyword}
+          onOpenContact={handleOpenContact}
+          openingUserId={openingUserId}
+          viewModel={viewModel}
+          visibleContacts={visibleContacts}
+          visibleGroupConversations={visibleGroupConversations} />
       </div>
     </Sider>
   );
