@@ -23,7 +23,8 @@ import type {
 } from "react";
 import {
   useEffect,
-  useRef
+  useRef,
+  useState
 } from "react";
 
 import type {
@@ -55,6 +56,8 @@ const {
 const {
   TextArea
 } = Input;
+
+const SKELETON_EXIT_DURATION_MS = 240;
 
 interface IMessagePanelProps {
   viewModel: IHomeWorkbenchViewModel;
@@ -92,6 +95,75 @@ function isVideoResource(messageItem: IDataMessage): boolean {
       isFileMessage(messageItem) &&
       (messageItem.content?.type === "video" || isVideoUrl(messageItem.content?.url))
     );
+}
+
+function ChatMessageSkeleton(): ReactElement {
+  const skeletonRows = [
+    {
+      align: "peer",
+      lines: [
+        "44%",
+        "62%"
+      ]
+    },
+    {
+      align: "mine",
+      lines: [
+        "38%"
+      ]
+    },
+    {
+      align: "peer",
+      lines: [
+        "56%",
+        "48%",
+        "30%"
+      ]
+    },
+    {
+      align: "mine",
+      lines: [
+        "52%",
+        "34%"
+      ]
+    }
+  ];
+
+  return (
+    <div
+      aria-label="正在加载流言"
+      className="flow-chat-skeleton"
+      role="status">
+      {skeletonRows.map((row, rowIndex) => {
+        const isMine = row.align === "mine";
+
+        return (
+          <div
+            key={`${row.align}-${rowIndex}`}
+            className={`flow-chat-skeleton-row ${isMine ? "is-mine" : "is-peer"}`}>
+            {!isMine && (
+              <span className="flow-chat-skeleton-avatar" />
+            )}
+
+            <span className="flow-chat-skeleton-bubble">
+              <span className="flow-chat-skeleton-meta" />
+
+              {row.lines.map((width, lineIndex) => {
+                return (
+                  <span
+                    key={`${width}-${lineIndex}`}
+                    className="flow-chat-skeleton-line"
+                    style={{
+                      width
+                    }} />
+                );
+              })}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function renderMessageContent(messageItem: IDataMessage): ReactElement {
@@ -189,6 +261,11 @@ function MessagePanel({
 
   const conversationOpening = hasActiveConversation && (state.conversationOpening || state.messageLoading || !state.activeConversation);
 
+  const [
+    skeletonPhase,
+    setSkeletonPhase
+  ] = useState<"hidden" | "leaving" | "visible">(conversationOpening ? "visible" : "hidden");
+
   const visibleMessages = state.messages.filter(isRenderableMessage);
 
   const textSearchResults = state.searchResults.filter(isTextMessage);
@@ -203,6 +280,8 @@ function MessagePanel({
 
   const latestMessage = visibleMessages.at(-1);
 
+  const showSkeleton = skeletonPhase !== "hidden";
+
   const resourceUploadProps: UploadProps = {
     accept: ".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.webm,image/*,video/*",
     beforeUpload(file) {
@@ -214,6 +293,36 @@ function MessagePanel({
     maxCount: 1,
     showUploadList: false
   };
+
+  useEffect(() => {
+    if (conversationOpening) {
+      setSkeletonPhase("visible");
+
+      return;
+    }
+
+    setSkeletonPhase(currentPhase => {
+      return currentPhase === "visible" ? "leaving" : currentPhase;
+    });
+  }, [
+    conversationOpening
+  ]);
+
+  useEffect(() => {
+    if (skeletonPhase !== "leaving") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSkeletonPhase("hidden");
+    }, SKELETON_EXIT_DURATION_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    skeletonPhase
+  ]);
 
   useEffect(() => {
     if (!hasActiveConversation || state.messageLoading) {
@@ -341,112 +450,115 @@ function MessagePanel({
 
             // 消息区按左右对齐区分自己和他人；消息去重/排序在 hook 与 utils 中完成。
             <Space
-              className="flow-message-stack"
+              className={`flow-message-stack ${showSkeleton ? "has-skeleton" : ""}`}
               orientation="vertical"
               size={14}>
-              {conversationOpening && (
-                <div className="flow-chat-loading">
-                  <Spin />
-
-                  <Text className="flow-muted-text text-sm">
-                    正在打开流言...
-                  </Text>
+              {showSkeleton && (
+                <div className={`flow-chat-skeleton-layer ${skeletonPhase === "leaving" ? "is-leaving" : ""}`}>
+                  <ChatMessageSkeleton />
                 </div>
               )}
 
-              {!conversationOpening && state.hasMoreMessages && (
-                <Button
-                  className="self-center"
-                  loading={state.loadingMoreMessages}
-                  size="small"
-                  type="text"
-                  onClick={() => {
-                    return void handleLoadEarlierMessages();
-                  }}>
-                  加载更早的流言
-                </Button>
-              )}
+              {!conversationOpening && (
+                <Space
+                  className={`flow-message-content-stack ${skeletonPhase === "leaving" ? "is-entering" : ""}`}
+                  orientation="vertical"
+                  size={14}>
+                  {state.hasMoreMessages && (
+                    <Button
+                      className="self-center"
+                      loading={state.loadingMoreMessages}
+                      size="small"
+                      type="text"
+                      onClick={() => {
+                        return void handleLoadEarlierMessages();
+                      }}>
+                      加载更早的流言
+                    </Button>
+                  )}
 
-              {!conversationOpening && visibleMessages.length === 0 && (
-                <div className="flow-chat-empty">
-                  <div className="flow-empty-bubble-stack">
-                    <span />
-                    <span />
-                    <span />
-                  </div>
-
-                  <Text className="flow-chat-empty-title text-base font-black">
-                    还没有流言
-                  </Text>
-
-                  <Text className="flow-chat-empty-support mt-1 text-sm">
-                    说点什么，让它开始流动
-                  </Text>
-                </div>
-              )}
-
-              {!conversationOpening && visibleMessages.map(item => {
-                const isMine = item.sender_id === state.currentUser?.id;
-
-                const sender = state.users.find(user => {
-                  return user.id === item.sender_id;
-                });
-
-                const messageUser = isMine ? state.currentUser : sender;
-
-                const messageName = getUserName(messageUser);
-
-                const messageAvatar = (
-                  <Avatar
-                    className="shrink-0 font-bold"
-                    size={32}
-                    src={messageUser?.avatar_url || undefined}>
-                    {messageName.slice(0, 1)}
-                  </Avatar>
-                );
-
-                return (
-                  <div
-                    key={item.id}
-                    className={`flow-message-row ${isMine ? "is-mine justify-end" : "is-peer justify-start"} flex items-end gap-2`}>
-                    {!isMine && messageAvatar}
-
-                    <div className={`flow-message-group group ${isMine ? "items-end" : "items-start"} flex flex-col`}>
-                      <Text className={`flow-message-meta mb-1 text-xs ${item.status === "failed" ? "is-failed" : ""} ${isMine ? "text-right" : ""}`}>
-                        {messageName}
-                        {" · "}
-                        {formatDateTime(item.sent_at)}
-                        {item.status === "sending" && " · 发送中"}
-                        {item.status === "failed" && " · 发送失败"}
-                      </Text>
-
-                      <div className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${item.status === "failed" ? "is-failed" : ""}`}>
-                        {renderMessageContent(item)}
+                  {visibleMessages.length === 0 && (
+                    <div className="flow-chat-empty">
+                      <div className="flow-empty-bubble-stack">
+                        <span />
+                        <span />
+                        <span />
                       </div>
 
-                      {item.status === "failed" && (
-                        <Button
-                          danger
-                          icon={<ReloadOutlined />}
-                          size="small"
-                          type="text"
-                          onClick={() => {
-                            return void actions.handleRetryMessage(item);
-                          }}>
-                          重试
-                        </Button>
-                      )}
+                      <Text className="flow-chat-empty-title text-base font-black">
+                        还没有流言
+                      </Text>
+
+                      <Text className="flow-chat-empty-support mt-1 text-sm">
+                        说点什么，让它开始流动
+                      </Text>
                     </div>
+                  )}
 
-                    {isMine && messageAvatar}
-                  </div>
-                );
-              })}
+                  {visibleMessages.map(item => {
+                    const isMine = item.sender_id === state.currentUser?.id;
 
-              <div
-                aria-hidden="true"
-                className="flow-message-bottom-sentinel"
-                ref={messageBottomRef} />
+                    const sender = state.users.find(user => {
+                      return user.id === item.sender_id;
+                    });
+
+                    const messageUser = isMine ? state.currentUser : sender;
+
+                    const messageName = getUserName(messageUser);
+
+                    const messageAvatar = (
+                      <Avatar
+                        className="shrink-0 font-bold"
+                        size={32}
+                        src={messageUser?.avatar_url || undefined}>
+                        {messageName.slice(0, 1)}
+                      </Avatar>
+                    );
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={`flow-message-row ${isMine ? "is-mine justify-end" : "is-peer justify-start"} flex items-end gap-2`}>
+                        {!isMine && messageAvatar}
+
+                        <div className={`flow-message-group group ${isMine ? "items-end" : "items-start"} flex flex-col`}>
+                          <Text className={`flow-message-meta mb-1 text-xs ${item.status === "failed" ? "is-failed" : ""} ${isMine ? "text-right" : ""}`}>
+                            {messageName}
+                            {" · "}
+                            {formatDateTime(item.sent_at)}
+                            {item.status === "sending" && " · 发送中"}
+                            {item.status === "failed" && " · 发送失败"}
+                          </Text>
+
+                          <div className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${item.status === "failed" ? "is-failed" : ""}`}>
+                            {renderMessageContent(item)}
+                          </div>
+
+                          {item.status === "failed" && (
+                            <Button
+                              danger
+                              icon={<ReloadOutlined />}
+                              size="small"
+                              type="text"
+                              onClick={() => {
+                                return void actions.handleRetryMessage(item);
+                              }}>
+                              重试
+                            </Button>
+                          )}
+                        </div>
+
+                        {isMine && messageAvatar}
+                      </div>
+                    );
+                  })}
+
+                  <div
+                    aria-hidden="true"
+                    className="flow-message-bottom-sentinel"
+                    ref={messageBottomRef} />
+                </Space>
+              )}
             </Space>
           ) : (
             <div className="flow-default-screen">

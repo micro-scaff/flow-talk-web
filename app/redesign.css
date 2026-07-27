@@ -1284,8 +1284,21 @@ textarea {
 }
 
 .flow-message-stack {
+  position: relative;
   width: min(100%, 920px);
   margin: 0 auto;
+}
+
+.flow-message-stack.has-skeleton {
+  min-height: 360px;
+}
+
+.flow-message-content-stack {
+  width: 100%;
+}
+
+.flow-message-content-stack.is-entering {
+  animation: chat-content-enter 0.28s 0.04s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .flow-message-row {
@@ -1307,14 +1320,92 @@ textarea {
   color: var(--flow-text);
 }
 
-.flow-chat-loading {
+.flow-chat-skeleton {
   display: grid;
-  width: min(360px, 100%);
-  min-height: 220px;
-  align-items: center;
-  justify-items: center;
+  width: min(100%, 920px);
   margin: 0 auto;
-  gap: 12px;
+  gap: 16px;
+}
+
+.flow-chat-skeleton-layer {
+  width: 100%;
+  animation: chat-skeleton-enter 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.flow-chat-skeleton-layer.is-leaving {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+  animation: chat-skeleton-exit 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.flow-chat-skeleton-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.flow-chat-skeleton-row.is-mine {
+  justify-content: flex-end;
+}
+
+.flow-chat-skeleton-avatar,
+.flow-chat-skeleton-bubble,
+.flow-chat-skeleton-line,
+.flow-chat-skeleton-meta {
+  position: relative;
+  overflow: hidden;
+  background: var(--flow-surface-soft);
+}
+
+.flow-chat-skeleton-avatar::after,
+.flow-chat-skeleton-bubble::after,
+.flow-chat-skeleton-line::after,
+.flow-chat-skeleton-meta::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--flow-surface-elevated) 78%, transparent), transparent);
+  content: "";
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.25s ease-in-out infinite;
+}
+
+.flow-chat-skeleton-avatar {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.flow-chat-skeleton-bubble {
+  display: grid;
+  width: min(72%, 520px);
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid var(--flow-border-soft);
+  border-radius: 14px 14px 14px 4px;
+  gap: 9px;
+  background: var(--flow-bubble-peer);
+}
+
+.flow-chat-skeleton-row.is-mine .flow-chat-skeleton-bubble {
+  border-color: var(--flow-primary-border);
+  border-radius: 14px 14px 4px;
+  background: var(--flow-primary-soft);
+}
+
+.flow-chat-skeleton-meta {
+  width: 92px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.flow-chat-skeleton-line {
+  display: block;
+  height: 12px;
+  max-width: 100%;
+  border-radius: 999px;
 }
 
 .flow-message-group {
@@ -1548,6 +1639,25 @@ textarea {
 @keyframes message-enter {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes chat-skeleton-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes chat-skeleton-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-6px) scale(0.985); }
+}
+
+@keyframes chat-content-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes skeleton-shimmer {
+  to { transform: translateX(100%); }
 }
 
 @keyframes signal-travel {
@@ -2232,6 +2342,11 @@ textarea {
   /* 自己的消息省略重复头像，为正文留下更稳定的可读宽度。 */
   .flow-message-group {
     max-width: 86%;
+  }
+
+  .flow-chat-skeleton-bubble {
+    width: min(86%, 560px);
+    padding: 12px;
   }
 
   .flow-message-row.is-mine > .ant-avatar {

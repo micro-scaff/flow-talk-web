@@ -2,7 +2,6 @@ import {
   ArrowLeftOutlined,
   InfoCircleOutlined,
   LaptopOutlined,
-  PlusOutlined,
   SearchOutlined,
   TeamOutlined
 } from "@ant-design/icons";
@@ -19,15 +18,23 @@ import type {
   ReactElement
 } from "react";
 import {
+  memo,
   useState
 } from "react";
+
+import type {
+  IDataConversation,
+  IDataConversationListItem,
+  IDataPresence
+} from "~/api";
 
 import type {
   IHomeWorkbenchViewModel
 } from "../type";
 import {
   getConversationDisplayTitle,
-  getDirectConversationPeer
+  getDirectConversationPeer,
+  getDirectConversationPeerId
 } from "../utils";
 
 const {
@@ -42,6 +49,8 @@ const {
 interface IWorkspaceHeaderProps {
   viewModel: IHomeWorkbenchViewModel;
 }
+
+type THeaderConversation = IDataConversation | IDataConversationListItem | null;
 
 const connectionLabels = {
   closed: "实时已断开",
@@ -59,6 +68,84 @@ const connectionColors = {
   open: "success"
 } as const;
 
+function readHeaderConversation(viewModel: IHomeWorkbenchViewModel): THeaderConversation {
+  const {
+    state
+  } = viewModel;
+
+  if (!state.activeConversationId) {
+    return null;
+  }
+
+  return state.conversations.find(conversation => {
+    return conversation.id === state.activeConversationId;
+  }) || state.activeConversation;
+}
+
+function readPresenceSignature(presences: Record<number, IDataPresence>, conversation: THeaderConversation, currentUserId?: number): string {
+  if (!conversation) {
+    return "";
+  }
+
+  const userIds = conversation.type === "direct"
+    ? [
+        getDirectConversationPeerId(conversation, currentUserId)
+      ]
+    : conversation.members?.map(member => {
+        return member.user_id;
+      }) || [];
+
+  return userIds.
+      filter((userId): userId is number => {
+        return Boolean(userId);
+      }).
+      map(userId => {
+        const presence = presences[userId];
+
+        return [
+          userId,
+          presence?.online ? 1 : 0,
+          presence?.revision || 0
+        ].join(":");
+      }).
+      join("|");
+}
+
+function readHeaderSignature(viewModel: IHomeWorkbenchViewModel): string {
+  const {
+    state
+  } = viewModel;
+
+  const conversation = readHeaderConversation(viewModel);
+
+  const usersSignature = state.users.map(user => {
+    return [
+      user.id || "",
+      user.nickname || "",
+      user.username || "",
+      user.avatar_url || ""
+    ].join(":");
+  }).join("|");
+
+  return [
+    state.activeConversationId || "",
+    conversation?.id || "",
+    conversation?.type || "",
+    conversation?.title || "",
+    conversation?.avatar_url || "",
+    conversation?.direct_key || "",
+    conversation?.member_count || "",
+    conversation?.members?.map(member => {
+      return `${member.user_id}:${member.role}:${member.status}`;
+    }).join(",") || "",
+    state.currentUser?.id || "",
+    state.searchText,
+    state.wsStatus,
+    usersSignature,
+    readPresenceSignature(state.presences, conversation, state.currentUser?.id)
+  ].join("||");
+}
+
 function WorkspaceHeader({
   viewModel
 }: IWorkspaceHeaderProps): ReactElement {
@@ -74,33 +161,33 @@ function WorkspaceHeader({
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
-  const isDirectConversation = state.activeConversation?.type === "direct";
+  const headerConversation = readHeaderConversation(viewModel);
 
-  const directUser = state.activeConversation && isDirectConversation ? getDirectConversationPeer(state.activeConversation, state.currentUser?.id, state.users) : undefined;
+  const isDirectConversation = headerConversation?.type === "direct";
+
+  const directUser = headerConversation && isDirectConversation ? getDirectConversationPeer(headerConversation, state.currentUser?.id, state.users) : undefined;
 
   const directPresence = directUser?.id ? state.presences[directUser.id] : undefined;
 
-  const headerTitle = state.activeConversation ? getConversationDisplayTitle(state.activeConversation, state.currentUser?.id, state.users) : state.activeTitle;
+  const headerTitle = headerConversation ? getConversationDisplayTitle(headerConversation, state.currentUser?.id, state.users) : state.activeTitle;
 
-  const headerAvatar = isDirectConversation ? directUser?.avatar_url : state.activeConversation?.avatar_url;
+  const headerAvatar = isDirectConversation ? directUser?.avatar_url : headerConversation?.avatar_url;
 
-  const groupMemberCount = state.activeConversation?.member_count || state.activeConversation?.members?.length || 0;
+  const groupMemberCount = headerConversation?.member_count || headerConversation?.members?.length || 0;
 
-  const groupOnlineCount = state.activeConversation?.members?.filter(member => {
+  const groupOnlineCount = headerConversation?.members?.filter(member => {
     return member.status === "active" && state.presences[member.user_id]?.online;
   }).length || 0;
-
-  const currentGroupMember = state.activeConversation?.members?.find(member => {
-    return member.user_id === state.currentUser?.id && member.status === "active";
-  });
-
-  const canAddGroupMembers = currentGroupMember?.role === "owner" || currentGroupMember?.role === "admin";
 
   const connectionLabel = connectionLabels[state.wsStatus];
 
   const connectionColor = connectionColors[state.wsStatus];
 
-  const headerDescription = isDirectConversation ? (directPresence?.online ? "在线" : "离线") : `${groupMemberCount} 位成员 · ${groupOnlineCount} 人在线`;
+  const headerDescription = isDirectConversation
+    ? (directPresence?.online ? "在线" : "离线")
+    : headerConversation?.members?.length
+      ? `${groupMemberCount} 位成员 · ${groupOnlineCount} 人在线`
+      : `${groupMemberCount} 位成员`;
 
   return (
     <header className={`flow-topbar ${hasActiveConversation ? "" : "is-welcome"} ${mobileSearchOpen ? "is-mobile-search-open" : ""}`}>
@@ -130,7 +217,7 @@ function WorkspaceHeader({
                   {headerTitle}
                 </Title>
 
-                {state.activeConversation?.type === "group" && (
+                {headerConversation?.type === "group" && (
                   <Tag className="flow-conversation-tag">
                     群聊
                   </Tag>
@@ -232,18 +319,6 @@ function WorkspaceHeader({
           </Tooltip>
         )}
 
-        {state.activeConversation?.type === "group" && canAddGroupMembers && (
-          <Tooltip title="添加群成员">
-            <Button
-              aria-label="添加群成员"
-              className="flow-icon-button flow-member-button"
-              icon={<PlusOutlined />}
-              shape="circle"
-              onClick={() => {
-                return actions.setMemberModalOpen(true);
-              }} />
-          </Tooltip>
-        )}
       </Space>
 
       {mobileSearchOpen && (
@@ -274,4 +349,8 @@ function WorkspaceHeader({
   );
 }
 
-export { WorkspaceHeader };
+const MemoizedWorkspaceHeader = memo(WorkspaceHeader, (previousProps, nextProps) => {
+  return readHeaderSignature(previousProps.viewModel) === readHeaderSignature(nextProps.viewModel);
+});
+
+export { MemoizedWorkspaceHeader as WorkspaceHeader };

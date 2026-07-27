@@ -101,6 +101,16 @@ function ConversationDetailPanel({
                     {canManageGroup ? "编辑群资料" : "仅群主或管理员可编辑"}
                   </Button>
 
+                  {canManageGroup && (
+                    <Button
+                      block
+                      onClick={() => {
+                        return actions.setMemberModalOpen(true);
+                      }}>
+                      添加群成员
+                    </Button>
+                  )}
+
                   {currentMember && currentMember.role !== "owner" && (
                     <Button
                       block
