@@ -217,10 +217,7 @@ function ConversationSidebar({
   const activeGroupConversationId = state.activeConversation?.type === "group" ? state.activeConversation.id : undefined;
 
   function getContactDescription(userId: number, username?: string): string {
-    return [
-      username ? `@${username}` : "",
-      state.presences[userId]?.online ? "在线" : "离线"
-    ].filter(Boolean).join(" · ");
+    return username ? `@${username}` : `ID ${userId}`;
   }
 
   async function handleOpenContact(userId: number): Promise<void> {
@@ -527,19 +524,11 @@ function ConversationSidebar({
                             ]}
                             overflowCount={99}
                             size="small">
-                            <Badge
-                              color={isOnline ? "#c9366f" : "#a89aa3"}
-                              dot
-                              offset={[
-                                -4,
-                                36
-                              ]}>
-                              <Avatar
-                                size={42}
-                                src={user.avatar_url || undefined}>
-                                {getUserName(user).slice(0, 1)}
-                              </Avatar>
-                            </Badge>
+                            <Avatar
+                              size={42}
+                              src={user.avatar_url || undefined}>
+                              {getUserName(user).slice(0, 1)}
+                            </Avatar>
                           </Badge>
 
                           <span className="flow-contact-copy">
@@ -547,9 +536,15 @@ function ConversationSidebar({
                               <Text
                                 className="min-w-0"
                                 strong
-                                ellipsis>
+                                ellipsis
+                                title={getUserName(user)}>
                                 {getUserName(user)}
                               </Text>
+
+                              <span className={`flow-contact-presence ${isOnline ? "is-online" : ""}`}>
+                                <i />
+                                {isOnline ? "在线" : "离线"}
+                              </span>
                             </span>
 
                             <Text

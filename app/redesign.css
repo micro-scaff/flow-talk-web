@@ -885,10 +885,20 @@ textarea {
 }
 
 .flow-sidebar-list-scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: 100%;
   padding-bottom: 14px;
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-color: var(--flow-border) transparent;
+}
+
+.flow-sidebar-list-scroll > section {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .flow-list-title.is-compact {
@@ -944,6 +954,9 @@ textarea {
 }
 
 .flow-contact-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   height: auto;
   gap: 2px;
   padding: 2px 10px 18px;
@@ -952,6 +965,9 @@ textarea {
 
 .flow-contact-section {
   display: grid;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   gap: 4px;
 }
 
@@ -975,6 +991,8 @@ textarea {
 .flow-contact-row {
   position: relative;
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 62px;
   margin: 0;
   padding: 8px 10px;
@@ -1021,19 +1039,33 @@ textarea {
   font-weight: 800;
 }
 
+.flow-contact-row > .ant-badge {
+  flex: 0 0 auto;
+}
+
 .flow-contact-heading {
   min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   gap: 8px;
 }
 
 .flow-contact-copy {
   min-width: 0;
+  max-width: 100%;
+  flex: 1 1 0;
   overflow: hidden;
   gap: 3px;
 }
 
+.flow-contact-row:not(.flow-group-chat-row) .flow-contact-copy {
+  width: 0;
+}
+
 .flow-contact-heading > .ant-typography,
 .flow-contact-copy > .ant-typography {
+  display: block;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
@@ -1043,6 +1075,43 @@ textarea {
 
 .flow-contact-heading > .ant-typography {
   flex: 1 1 auto;
+}
+
+.flow-contact-presence {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  gap: 5px;
+  padding-inline: 7px;
+  border-radius: 999px;
+  background: var(--flow-surface-soft);
+  color: var(--flow-muted);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.flow-contact-presence i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.62;
+}
+
+.flow-contact-presence.is-online {
+  background: var(--flow-primary-soft);
+  color: var(--flow-primary);
+}
+
+.flow-contact-presence.is-online i {
+  box-shadow: 0 0 0 3px var(--flow-primary-soft);
+  opacity: 1;
 }
 
 .flow-group-chat-row {
@@ -1253,7 +1322,7 @@ textarea {
 
 .flow-workbench-main.has-detail-panel {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 310px);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 380px);
 }
 
 .flow-conversation-detail {
@@ -1269,8 +1338,36 @@ textarea {
   background: var(--flow-surface);
 }
 
+.flow-members-card.ant-card {
+  border: 0;
+  background: transparent;
+}
+
+.flow-members-card .ant-card-head {
+  min-height: 58px;
+  padding-inline: 4px;
+  border-bottom-color: var(--flow-border-soft);
+}
+
+.flow-member-card-title {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding-block: 10px;
+}
+
+.flow-member-summary.ant-typography {
+  color: var(--flow-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.flow-members-card .ant-card-body {
+  padding: 14px 0 0;
+}
+
 .flow-member-list {
-  gap: 14px !important;
+  gap: 16px !important;
 }
 
 .flow-member-section {
@@ -1278,35 +1375,60 @@ textarea {
   gap: 8px;
 }
 
+.flow-member-section + .flow-member-section {
+  padding-top: 14px;
+  border-top: 1px solid var(--flow-border-soft);
+}
+
 .flow-member-section-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 0 2px;
+  padding: 0 4px;
+}
+
+.flow-member-section-title > .ant-typography:first-child {
+  color: var(--flow-subtle);
+  font-size: 12px;
+}
+
+.flow-member-section-count.ant-typography {
+  display: inline-grid;
+  min-width: 24px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--flow-surface-soft);
+  color: var(--flow-muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 20px;
+  place-items: center;
 }
 
 .flow-member-row {
   display: grid;
   min-width: 0;
-  padding: 10px;
-  grid-template-columns: 34px minmax(0, 1fr) max-content;
+  padding: 9px 8px;
+  grid-template-columns: 40px minmax(0, 1fr) max-content;
   align-items: center;
-  column-gap: 10px;
-  border-radius: 8px;
-  transition: background 180ms ease;
+  column-gap: 11px;
+  border-radius: 10px;
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .flow-member-row.has-member-actions {
-  align-items: start;
+  row-gap: 8px;
 }
 
 .flow-member-row:hover {
-  background: var(--flow-surface-muted);
+  background: var(--flow-surface-hover);
 }
 
 .flow-member-row.is-current-user {
-  background: var(--flow-primary-soft);
+  box-shadow: inset 3px 0 var(--flow-primary);
 }
 
 .flow-member-row.is-current-user:hover {
@@ -1314,7 +1436,19 @@ textarea {
 }
 
 .flow-member-row > .ant-badge {
-  min-width: 34px;
+  min-width: 40px;
+}
+
+.flow-member-avatar.ant-avatar {
+  background: var(--flow-surface-soft) !important;
+  color: var(--flow-text) !important;
+  font-weight: 850;
+}
+
+.flow-member-row.is-owner .flow-member-avatar.ant-avatar,
+.flow-member-row.is-admin .flow-member-avatar.ant-avatar {
+  background: var(--flow-primary-soft) !important;
+  color: var(--flow-primary) !important;
 }
 
 .flow-member-copy {
@@ -1338,6 +1472,7 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 800;
 }
 
 .flow-member-self-tag.ant-tag {
@@ -1357,7 +1492,7 @@ textarea {
 .flow-member-meta {
   display: block;
   overflow: hidden;
-  color: var(--flow-text-muted);
+  color: var(--flow-muted);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1365,16 +1500,50 @@ textarea {
 
 .flow-member-status-tag.ant-tag {
   display: inline-flex;
-  min-width: 42px;
-  min-height: 24px;
+  min-width: 48px;
+  min-height: 22px;
   align-items: center;
   justify-content: center;
   margin-inline-end: 0;
   border: 0;
   border-radius: 999px;
-  font-size: 12px;
+  background: var(--flow-surface-soft);
+  color: var(--flow-muted);
+  font-size: 11px;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.flow-member-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--flow-muted);
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.flow-member-presence i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--flow-muted);
+  opacity: 0.55;
+}
+
+.flow-member-presence.is-online {
+  color: var(--flow-primary);
+}
+
+.flow-member-presence.is-online i {
+  background: var(--flow-primary);
+  box-shadow: 0 0 0 3px var(--flow-primary-soft);
+  opacity: 1;
+}
+
+.flow-member-row.is-inactive-member {
+  opacity: 0.68;
 }
 
 .flow-member-side {
@@ -1392,20 +1561,75 @@ textarea {
 .flow-member-actions {
   display: flex;
   min-width: 0;
+  grid-column: 2 / -1;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--flow-border-soft);
   flex-wrap: nowrap;
 }
 
-.flow-member-role-select {
-  width: 82px;
+.flow-member-actions-label.ant-typography {
+  margin-right: auto;
+  color: var(--flow-muted);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.flow-member-role-select .ant-select-selector {
-  height: 30px !important;
-  min-height: 30px !important;
-  border-radius: 8px !important;
+.flow-member-role-toggle {
+  display: grid;
+  width: 142px;
+  padding: 3px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  border-radius: 9px;
+  background: var(--flow-surface-soft);
+}
+
+.flow-member-role-toggle:focus-within {
+  box-shadow: 0 0 0 3px var(--flow-focus);
+}
+
+.flow-member-role-toggle > button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--flow-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.flow-member-role-toggle > button:hover:not(.is-selected) {
+  background: var(--flow-surface-hover);
+  color: var(--flow-text);
+}
+
+.flow-member-role-toggle > button.is-selected {
+  background: var(--flow-primary) !important;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--flow-primary) 24%, transparent);
+  color: var(--flow-primary-contrast) !important;
+}
+
+.flow-member-role-toggle > button.is-selected:active {
+  transform: scale(0.97);
+}
+
+.flow-member-role-toggle > button:focus-visible {
+  outline: 2px solid var(--flow-primary);
+  outline-offset: 1px;
 }
 
 .flow-member-remove-button.ant-btn {
@@ -1421,10 +1645,39 @@ textarea {
 }
 
 .ant-drawer .flow-conversation-detail {
+  --flow-surface: #f6eff3;
+  --flow-surface-elevated: #fffafd;
+  --flow-surface-soft: #eadfe6;
+  --flow-surface-hover: #eee4ea;
+  --flow-text: #251821;
+  --flow-muted: #887782;
+  --flow-subtle: #66545f;
+  --flow-border: rgba(52, 30, 45, 0.15);
+  --flow-border-soft: rgba(52, 30, 45, 0.09);
+  --flow-primary: #c9366f;
+  --flow-primary-contrast: #fff7fb;
+  --flow-primary-soft: rgba(201, 54, 111, 0.12);
+  --flow-focus: rgba(201, 54, 111, 0.13);
   display: block;
   padding: 0 !important;
   border: 0 !important;
   overflow: visible;
+}
+
+:root[data-theme="dark"] .ant-drawer .flow-conversation-detail {
+  --flow-surface: #191119;
+  --flow-surface-elevated: #211720;
+  --flow-surface-soft: #2b1e29;
+  --flow-surface-hover: #31222f;
+  --flow-text: #f8edf3;
+  --flow-muted: #aa98a4;
+  --flow-subtle: #d2c0ca;
+  --flow-border: rgba(248, 237, 243, 0.16);
+  --flow-border-soft: rgba(248, 237, 243, 0.09);
+  --flow-primary: #f0528a;
+  --flow-primary-contrast: #21131e;
+  --flow-primary-soft: rgba(240, 82, 138, 0.14);
+  --flow-focus: rgba(240, 82, 138, 0.15);
 }
 
 .flow-chat-scroll {
@@ -2049,6 +2302,22 @@ textarea {
 
   .flow-detail-button.ant-btn {
     display: inline-flex;
+  }
+}
+
+/* 与工作台的移动断点保持一致，避免 821–860px 时侧栏仍被固定为桌面宽度。 */
+@media (min-width: 821px) and (max-width: 860px) {
+  .flow-workbench.is-mobile-contact-mode .flow-sidebar.ant-layout-sider {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    flex-basis: 100% !important;
+  }
+
+  .flow-sidebar-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 }
 

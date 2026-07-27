@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Empty,
-  Select,
   Space,
   Tag,
   Typography
@@ -157,6 +156,14 @@ function ConversationDetailPanel({
     };
   });
 
+  const activeMemberViewItems = memberViewItems.filter(item => {
+    return item.member.status === "active";
+  });
+
+  const onlineMemberCount = activeMemberViewItems.filter(item => {
+    return item.presence?.online;
+  }).length;
+
   const groupedMembers = memberSections.map(section => {
     return {
       ...section,
@@ -249,9 +256,25 @@ function ConversationDetailPanel({
         </Card>
 
         <Card
-          className="!rounded-lg"
+          className="flow-members-card !rounded-lg"
           size="small"
-          title="成员">
+          title={(
+            <div className="flow-member-card-title">
+              <Text strong>
+                成员
+              </Text>
+
+              <Text className="flow-member-summary">
+                {activeMemberViewItems.length}
+                {" "}
+                位成员 ·
+                {" "}
+                {onlineMemberCount}
+                {" "}
+                人在线
+              </Text>
+            </div>
+          )}>
           <Space
             className="flow-member-list w-full"
             orientation="vertical">
@@ -265,7 +288,7 @@ function ConversationDetailPanel({
                       {section.title}
                     </Text>
 
-                    <Text className="text-xs text-[#8a8d91]">
+                    <Text className="flow-member-section-count">
                       {section.members.length}
                     </Text>
                   </div>
@@ -281,6 +304,8 @@ function ConversationDetailPanel({
                     }) => {
                       const memberName = getUserName(user);
 
+                      const memberAccount = user?.username ? `@${user.username}` : `ID ${member.user_id}`;
+
                       const isCurrentUser = member.user_id === state.currentUser?.id;
 
                       const canShowMemberActions = state.activeConversation?.type === "group" && member.status === "active" && member.user_id !== state.currentUser?.id && canManageGroup && member.role !== "owner";
@@ -288,13 +313,17 @@ function ConversationDetailPanel({
                       return (
                         <div
                           key={member.user_id}
-                          className={`flow-member-row ${isCurrentUser ? "is-current-user" : ""} ${canShowMemberActions ? "has-member-actions" : ""}`}>
+                          className={`flow-member-row is-${member.role} ${member.status === "active" ? "is-active-member" : "is-inactive-member"} ${isCurrentUser ? "is-current-user" : ""} ${canShowMemberActions ? "has-member-actions" : ""}`}>
                           <Badge
-                            color={presence?.online ? "green" : "default"}
-                            dot>
+                            color={presence?.online ? "var(--flow-primary)" : "var(--flow-muted)"}
+                            dot
+                            offset={[
+                              -3,
+                              35
+                            ]}>
                             <Avatar
-                              className="bg-[#e7f3ff] text-[#1877f2]"
-                              size={34}
+                              className="flow-member-avatar"
+                              size={40}
                               src={user?.avatar_url || undefined}>
                               {memberName.slice(0, 1)}
                             </Avatar>
@@ -317,54 +346,75 @@ function ConversationDetailPanel({
 
                             <Text className="flow-member-meta">
                               {getMemberRoleLabel(member.role)}
-                              {presence?.online ? " · 在线" : " · 离线"}
+                              {" · "}
+                              {memberAccount}
                             </Text>
                           </div>
 
                           <div className="flow-member-side">
-                            <Tag
-                              className="flow-member-status-tag"
-                              color={member.status === "active" ? "green" : "default"}>
-                              {getMemberStatusLabel(member.status)}
-                            </Tag>
-
-                            {canShowMemberActions && (
-                              <div className="flow-member-actions">
-                                {canChangeMemberRole && (
-                                  <Select
-                                    className="flow-member-role-select"
-                                    size="small"
-                                    value={member.role}
-                                    options={[
-                                      {
-                                        label: "管理员",
-                                        value: "admin"
-                                      },
-                                      {
-                                        label: "成员",
-                                        value: "member"
-                                      }
-                                    ]}
-                                    onChange={role => {
-                                      return void actions.handleUpdateMemberRole(member.user_id, role);
-                                    }} />
-                                )}
-
-                                {(currentMember?.role === "owner" || member.role === "member") && (
-                                  <Button
-                                    danger
-                                    className="flow-member-remove-button"
-                                    size="small"
-                                    type="text"
-                                    onClick={() => {
-                                      return void actions.handleRemoveMember(member.user_id);
-                                    }}>
-                                    移除
-                                  </Button>
-                                )}
-                              </div>
+                            {member.status === "active" ? (
+                              <span className={`flow-member-presence ${presence?.online ? "is-online" : ""}`}>
+                                <i />
+                                {presence?.online ? "在线" : "离线"}
+                              </span>
+                            ) : (
+                              <Tag className="flow-member-status-tag">
+                                {getMemberStatusLabel(member.status)}
+                              </Tag>
                             )}
                           </div>
+
+                          {canShowMemberActions && (
+                            <div className="flow-member-actions">
+                              <Text className="flow-member-actions-label">
+                                {canChangeMemberRole ? "角色" : "成员管理"}
+                              </Text>
+
+                              {canChangeMemberRole && (
+                                <div
+                                  aria-label={`修改 ${memberName} 的群聊角色`}
+                                  className="flow-member-role-toggle"
+                                  role="group">
+                                  <button
+                                    aria-pressed={member.role === "member"}
+                                    className={member.role === "member" ? "is-selected" : ""}
+                                    type="button"
+                                    onClick={() => {
+                                      if (member.role !== "member") {
+                                        void actions.handleUpdateMemberRole(member.user_id, "member");
+                                      }
+                                    }}>
+                                    成员
+                                  </button>
+
+                                  <button
+                                    aria-pressed={member.role === "admin"}
+                                    className={member.role === "admin" ? "is-selected" : ""}
+                                    type="button"
+                                    onClick={() => {
+                                      if (member.role !== "admin") {
+                                        void actions.handleUpdateMemberRole(member.user_id, "admin");
+                                      }
+                                    }}>
+                                    管理员
+                                  </button>
+                                </div>
+                              )}
+
+                              {(currentMember?.role === "owner" || member.role === "member") && (
+                                <Button
+                                  danger
+                                  className="flow-member-remove-button"
+                                  size="small"
+                                  type="text"
+                                  onClick={() => {
+                                    return void actions.handleRemoveMember(member.user_id);
+                                  }}>
+                                  移除
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
