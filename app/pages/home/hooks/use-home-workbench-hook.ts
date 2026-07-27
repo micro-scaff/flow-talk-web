@@ -785,6 +785,15 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     const requestSequence = activeConversationRequestRef.current + 1;
 
     activeConversationRequestRef.current = requestSequence;
+
+    const pendingConversationSummary = conversationsRef.current.find(conversation => {
+      return conversation.id === conversationId;
+    });
+
+    if (pendingConversationSummary) {
+      setActiveConversation(pendingConversationSummary);
+    }
+
     setMessageLoading(true);
 
     try {
@@ -887,6 +896,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleSelectConversation = useCallback((conversationId: number): void => {
+    const conversationSummary = conversationsRef.current.find(conversation => {
+      return conversation.id === conversationId;
+    });
+
+    if (conversationSummary) {
+      setActiveConversation(conversationSummary);
+    }
+
     setActiveConversationId(conversationId);
     navigate(`/conversations/${conversationId}`);
   }, [
