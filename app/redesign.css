@@ -1816,6 +1816,7 @@ textarea {
   .flow-chat-skeleton,
   .flow-composer-inner {
     width: min(100%, 1040px);
+    display: flex;
   }
 
   .flow-message-group {
