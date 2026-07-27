@@ -705,10 +705,10 @@ textarea {
 }
 
 .flow-sidebar.ant-layout-sider {
-  width: 332px !important;
-  min-width: 332px !important;
-  max-width: 332px !important;
-  flex: 0 0 332px !important;
+  width: 360px !important;
+  min-width: 360px !important;
+  max-width: 360px !important;
+  flex: 0 0 360px !important;
   border-right: 1px solid var(--flow-border-soft) !important;
   box-shadow: none;
   animation: sidebar-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -974,7 +974,9 @@ textarea {
 
 .flow-contact-row {
   position: relative;
+  width: 100%;
   min-height: 62px;
+  margin: 0;
   padding: 8px 10px;
   border: 0;
   border-radius: 10px;
@@ -995,7 +997,6 @@ textarea {
 
 .flow-contact-row:hover {
   background: var(--flow-surface-hover);
-  transform: translateX(2px);
 }
 
 .flow-contact-row.is-active {
@@ -1021,11 +1022,27 @@ textarea {
 }
 
 .flow-contact-heading {
+  min-width: 0;
   gap: 8px;
 }
 
 .flow-contact-copy {
+  min-width: 0;
+  overflow: hidden;
   gap: 3px;
+}
+
+.flow-contact-heading > .ant-typography,
+.flow-contact-copy > .ant-typography {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flow-contact-heading > .ant-typography {
+  flex: 1 1 auto;
 }
 
 .flow-group-chat-row {
@@ -1988,10 +2005,10 @@ textarea {
   }
 
   .flow-sidebar.ant-layout-sider {
-    width: 304px !important;
-    min-width: 304px !important;
-    max-width: 304px !important;
-    flex-basis: 304px !important;
+    width: 328px !important;
+    min-width: 328px !important;
+    max-width: 328px !important;
+    flex-basis: 328px !important;
   }
 
   .flow-brand-row {
