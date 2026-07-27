@@ -47,7 +47,7 @@ export function LoginForm({
           ]}>
           <Input
             autoComplete="username"
-            placeholder="请输入账号，例如 alice" />
+            placeholder="请输入账号" />
         </Form.Item>
 
         <Form.Item

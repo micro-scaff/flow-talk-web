@@ -65,11 +65,15 @@ export function RegisterForm({
             {
               message: "请输入注册账号",
               required: true
+            },
+            {
+              message: "账号只能包含英文和特殊字符",
+              pattern: /^[a-z!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]+$/i
             }
           ]}>
           <Input
             autoComplete="username"
-            placeholder="建议使用英文或数字组合" />
+            placeholder="仅支持英文和特殊字符" />
         </Form.Item>
 
         <Form.Item
@@ -88,6 +92,38 @@ export function RegisterForm({
           <Input.Password
             autoComplete="new-password"
             placeholder="至少 6 位密码" />
+        </Form.Item>
+
+        <Form.Item
+          dependencies={[
+            "password"
+          ]}
+          label="确认密码"
+          name="confirmPassword"
+          rules={[
+            {
+              message: "请再次输入注册密码",
+              required: true
+            },
+            ({
+              getFieldValue
+            }) => {
+              return {
+                validator(rule, value) {
+                  void rule;
+
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+
+                  return Promise.reject(new Error("两次输入的密码不一致"));
+                }
+              };
+            }
+          ]}>
+          <Input.Password
+            autoComplete="new-password"
+            placeholder="请再次输入密码" />
         </Form.Item>
 
         <Form.Item

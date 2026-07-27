@@ -30,11 +30,15 @@ import {
 } from "../utils";
 
 interface IRegisterFormHook {
-  form: FormInstance<IParamsRegister>;
+  form: FormInstance<IRegisterFormValues>;
   onAvatarUpload: (file: File) => Promise<void>;
-  initialValues: Partial<IParamsRegister>;
+  initialValues: Partial<IRegisterFormValues>;
   loading: boolean;
-  onSubmit: (values: IParamsRegister) => Promise<void>;
+  onSubmit: (values: IRegisterFormValues) => Promise<void>;
+}
+
+interface IRegisterFormValues extends IParamsRegister {
+  confirmPassword?: string;
 }
 
 export function useRegisterFormHook(): IRegisterFormHook {
@@ -44,7 +48,7 @@ export function useRegisterFormHook(): IRegisterFormHook {
 
   const [
     form
-  ] = Form.useForm<IParamsRegister>();
+  ] = Form.useForm<IRegisterFormValues>();
 
   const [
     loading,
@@ -53,9 +57,10 @@ export function useRegisterFormHook(): IRegisterFormHook {
 
   const navigate = useNavigate();
 
-  const initialValues = useMemo<Partial<IParamsRegister>>(() => {
+  const initialValues = useMemo<Partial<IRegisterFormValues>>(() => {
     return {
       avatarBase64: "",
+      confirmPassword: "",
       nickname: ""
     };
   }, []);
@@ -84,11 +89,18 @@ export function useRegisterFormHook(): IRegisterFormHook {
   };
 
   // 注册模块 hook 负责把表单动作串起来，接口字段映射交给 api 层处理。
-  const onSubmit = async (values: IParamsRegister): Promise<void> => {
+  const onSubmit = async (values: IRegisterFormValues): Promise<void> => {
     setLoading(true);
 
     try {
-      const response = await dataRegister(values);
+      const registerPayload: IParamsRegister = {
+        avatarBase64: values.avatarBase64,
+        nickname: values.nickname,
+        password: values.password,
+        username: values.username
+      };
+
+      const response = await dataRegister(registerPayload);
 
       saveSession(response);
       message.success("注册成功，已为你创建 Flow Talk 账号");
@@ -113,4 +125,7 @@ export function useRegisterFormHook(): IRegisterFormHook {
   };
 }
 
-export type { IRegisterFormHook };
+export type {
+  IRegisterFormHook,
+  IRegisterFormValues
+};
