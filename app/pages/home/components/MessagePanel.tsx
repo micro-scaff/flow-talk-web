@@ -187,6 +187,8 @@ function MessagePanel({
 
   const hasActiveConversation = Boolean(state.activeConversationId);
 
+  const conversationOpening = hasActiveConversation && (state.conversationOpening || state.messageLoading || !state.activeConversation);
+
   const visibleMessages = state.messages.filter(isRenderableMessage);
 
   const textSearchResults = state.searchResults.filter(isTextMessage);
@@ -334,7 +336,7 @@ function MessagePanel({
       <div
         className={`flow-chat-scroll ${hasActiveConversation ? "" : "is-welcome"}`}
         ref={chatScrollRef}>
-        <Spin spinning={state.messageLoading}>
+        <Spin spinning={state.messageLoading && !conversationOpening}>
           {hasActiveConversation ? (
 
             // 消息区按左右对齐区分自己和他人；消息去重/排序在 hook 与 utils 中完成。
@@ -342,7 +344,17 @@ function MessagePanel({
               className="flow-message-stack"
               orientation="vertical"
               size={14}>
-              {state.hasMoreMessages && (
+              {conversationOpening && (
+                <div className="flow-chat-loading">
+                  <Spin />
+
+                  <Text className="flow-muted-text text-sm">
+                    正在打开流言...
+                  </Text>
+                </div>
+              )}
+
+              {!conversationOpening && state.hasMoreMessages && (
                 <Button
                   className="self-center"
                   loading={state.loadingMoreMessages}
@@ -355,7 +367,7 @@ function MessagePanel({
                 </Button>
               )}
 
-              {visibleMessages.length === 0 && (
+              {!conversationOpening && visibleMessages.length === 0 && (
                 <div className="flow-chat-empty">
                   <div className="flow-empty-bubble-stack">
                     <span />
@@ -373,7 +385,7 @@ function MessagePanel({
                 </div>
               )}
 
-              {visibleMessages.map(item => {
+              {!conversationOpening && visibleMessages.map(item => {
                 const isMine = item.sender_id === state.currentUser?.id;
 
                 const sender = state.users.find(user => {

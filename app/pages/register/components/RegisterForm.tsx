@@ -67,13 +67,13 @@ export function RegisterForm({
               required: true
             },
             {
-              message: "账号只能包含英文和特殊字符",
-              pattern: /^[a-z!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]+$/i
+              message: "账号只能包含英文、数字和特殊字符",
+              pattern: /^[\w!@#$%^&*()+\-=[\]{};':"\\|,.<>/?`~]+$/
             }
           ]}>
           <Input
             autoComplete="username"
-            placeholder="仅支持英文和特殊字符" />
+            placeholder="仅支持英文、数字和特殊字符" />
         </Form.Item>
 
         <Form.Item

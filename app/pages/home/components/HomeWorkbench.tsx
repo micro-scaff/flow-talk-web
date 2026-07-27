@@ -41,7 +41,7 @@ function HomeWorkbench({
     state
   } = viewModel;
 
-  const isContactMode = !state.activeConversationId;
+  const isContactMode = state.contactListVisible;
 
   return (
     <main className={`flow-workbench ${isContactMode ? "is-mobile-contact-mode" : ""}`}>

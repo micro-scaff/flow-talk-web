@@ -177,17 +177,17 @@ function ConversationSidebar({
 
     const existingConversation = directConversationByUserId.get(userId);
 
-    if (existingConversation) {
-
-      // 已有单聊直接导航，避免重复请求创建接口并让常用联系人打开得更快。
-      actions.handleSelectConversation(existingConversation.id);
-
-      return;
-    }
-
     setOpeningUserId(userId);
 
     try {
+      if (existingConversation) {
+
+        // 已有单聊直接导航，避免重复请求创建接口并让常用联系人打开得更快。
+        await actions.handleSelectConversation(existingConversation.id);
+
+        return;
+      }
+
       await actions.handleCreateDirectWithUser(userId);
     } finally {
       setOpeningUserId(null);

@@ -39,6 +39,8 @@ export interface IHomeWorkbenchState {
   activeConversation: IDataConversation | null;
   activeConversationId: number | null;
   activeTitle: string;
+  contactListVisible: boolean;
+  conversationOpening: boolean;
   conversations: IDataConversationListItem[];
   currentUser: IDataGetCurrentUser | null;
   deviceId: string;
@@ -93,7 +95,7 @@ export interface IHomeWorkbenchActions {
   handleRefresh: () => Promise<void>;
   handleRemoveMember: (userId: number) => Promise<void>;
   handleSearch: () => Promise<void>;
-  handleSelectConversation: (conversationId: number) => void;
+  handleSelectConversation: (conversationId: number) => Promise<void>;
   handleSendResource: (file: File) => Promise<void>;
   handleSendMessage: () => Promise<void>;
   handleRetryMessage: (message: IDataMessage) => Promise<void>;

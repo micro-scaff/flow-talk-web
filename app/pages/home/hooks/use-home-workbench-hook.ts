@@ -158,6 +158,10 @@ function dataListAllUsers(): Promise<IDataListUsers> {
   });
 }
 
+function isMobileWorkbenchViewport(): boolean {
+  return typeof window !== "undefined" && window.matchMedia("(max-width: 820px)").matches;
+}
+
 // 消息接口按倒序分页返回，视图层统一使用升序，避免多个调用点各自维护排序规则。
 function sortMessagesById(messages: IDataMessage[]): IDataMessage[] {
   return [
@@ -293,6 +297,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const activeConversationRequestRef = useRef(0);
 
+  const preloadedConversationIdRef = useRef<number | null>(null);
+
   const reconcileInFlightRef = useRef<Promise<void> | null>(null);
 
   const userListRefreshInFlightRef = useRef<Promise<IDataListUsers | null> | null>(null);
@@ -319,6 +325,16 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     activeConversationId,
     setActiveConversationId
   ] = useState<number | null>(null);
+
+  const [
+    contactListVisible,
+    setContactListVisible
+  ] = useState(!params.conversationId);
+
+  const [
+    conversationOpening,
+    setConversationOpening
+  ] = useState(false);
 
   const [
     activeConversation,
@@ -781,7 +797,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     upsertCurrentDevice
   ]);
 
-  const loadActiveConversation = useCallback(async (conversationId: number): Promise<void> => {
+  const loadActiveConversation = useCallback(async (conversationId: number): Promise<boolean> => {
     const requestSequence = activeConversationRequestRef.current + 1;
 
     activeConversationRequestRef.current = requestSequence;
@@ -811,7 +827,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       ]);
 
       if (activeConversationRequestRef.current !== requestSequence) {
-        return;
+        return false;
       }
 
       const nextMessages = sortMessagesById(messagePage.items);
@@ -848,10 +864,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
               reportError(error, "标记会话已读失败");
             });
       }
+
+      return true;
     } catch (error) {
       if (activeConversationRequestRef.current === requestSequence) {
         reportError(error, "会话详情或消息加载失败");
       }
+
+      return false;
     } finally {
       if (activeConversationRequestRef.current === requestSequence) {
         setMessageLoading(false);
@@ -895,7 +915,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     reportError
   ]);
 
-  const handleSelectConversation = useCallback((conversationId: number): void => {
+  const handleSelectConversation = useCallback(async (conversationId: number): Promise<void> => {
     const conversationSummary = conversationsRef.current.find(conversation => {
       return conversation.id === conversationId;
     });
@@ -904,13 +924,39 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       setActiveConversation(conversationSummary);
     }
 
+    if (isMobileWorkbenchViewport()) {
+      setConversationOpening(true);
+
+      const loaded = await loadActiveConversation(conversationId);
+
+      if (!loaded) {
+        setConversationOpening(false);
+
+        return;
+      }
+
+      preloadedConversationIdRef.current = conversationId;
+      setActiveConversationId(conversationId);
+      setContactListVisible(false);
+      navigate(`/conversations/${conversationId}`);
+      window.requestAnimationFrame(() => {
+        setConversationOpening(false);
+      });
+
+      return;
+    }
+
+    setContactListVisible(false);
     setActiveConversationId(conversationId);
     navigate(`/conversations/${conversationId}`);
   }, [
+    loadActiveConversation,
     navigate
   ]);
 
   const handleBackToContactList = useCallback((): void => {
+    setConversationOpening(false);
+    setContactListVisible(true);
     setActiveConversationId(null);
     navigate("/");
   }, [
@@ -956,7 +1002,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       setDirectModalOpen(false);
       setSelectedDirectUserId(null);
       await loadConversations();
-      handleSelectConversation(conversation.id);
+      await handleSelectConversation(conversation.id);
     } catch (error) {
       reportError(error, "创建单聊失败");
     }
@@ -975,7 +1021,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       });
 
       await loadConversations();
-      handleSelectConversation(conversation.id);
+      await handleSelectConversation(conversation.id);
     } catch (error) {
       reportError(error, "创建单聊失败");
     }
@@ -1009,7 +1055,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       groupForm.resetFields();
       setGroupModalOpen(false);
       await loadConversations();
-      handleSelectConversation(conversation.id);
+      await handleSelectConversation(conversation.id);
     } catch (error) {
       reportError(error, "创建群聊失败");
     }
@@ -1391,7 +1437,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   const handleOpenSearchResult = useCallback((messageItem: IDataMessage): void => {
     setSearchResults([]);
     setSearchText("");
-    handleSelectConversation(messageItem.conversation_id);
+    void handleSelectConversation(messageItem.conversation_id);
   }, [
     handleSelectConversation
   ]);
@@ -1554,17 +1600,29 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
     const routeConversationId = parsedConversationId && Number.isSafeInteger(parsedConversationId) && parsedConversationId > 0 ? parsedConversationId : null;
 
-    if (routeConversationId !== activeConversationId) {
-      setActiveConversationId(routeConversationId);
+    setContactListVisible(routeConversationId === null);
+
+    setActiveConversationId(currentConversationId => {
+      if (routeConversationId === currentConversationId) {
+        return currentConversationId;
+      }
+
       setSearchResults([]);
-    }
+
+      return routeConversationId;
+    });
   }, [
-    activeConversationId,
     params.conversationId
   ]);
 
   useEffect(() => {
     if (activeConversationId) {
+      if (preloadedConversationIdRef.current === activeConversationId) {
+        preloadedConversationIdRef.current = null;
+
+        return;
+      }
+
       void loadActiveConversation(activeConversationId);
     } else {
       activeConversationRequestRef.current += 1;
@@ -1766,6 +1824,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     activeConversation,
     activeConversationId,
     activeTitle,
+    contactListVisible,
+    conversationOpening,
     conversations,
     currentUser,
     deviceId,
