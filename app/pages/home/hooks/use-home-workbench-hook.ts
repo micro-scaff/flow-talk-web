@@ -887,12 +887,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleSelectConversation = useCallback((conversationId: number): void => {
+    setActiveConversationId(conversationId);
     navigate(`/conversations/${conversationId}`);
   }, [
     navigate
   ]);
 
   const handleBackToContactList = useCallback((): void => {
+    setActiveConversationId(null);
     navigate("/");
   }, [
     navigate
