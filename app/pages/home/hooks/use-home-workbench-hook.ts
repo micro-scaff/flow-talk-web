@@ -91,6 +91,7 @@ import {
   markIncomingMessagesRead,
   mergeMessagePage,
   MESSAGE_ACK_TIMEOUT_MS,
+  pickWsConversationChanged,
   pickUploadResourceType,
   pickWsPresence,
   pickWsUnreadState,
@@ -983,6 +984,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
       addMemberForm.resetFields();
       setMemberModalOpen(false);
+      await loadConversations();
       await loadActiveConversation(activeConversationId);
       message.success("已添加群成员");
     } catch (error) {
@@ -992,6 +994,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     activeConversationId,
     addMemberForm,
     loadActiveConversation,
+    loadConversations,
     message,
     reportError
   ]);
@@ -1024,7 +1027,15 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         title: values.title
       });
 
-      setActiveConversation(response);
+      const updatedConversation: IDataConversation = {
+        ...activeConversation,
+        ...response
+      };
+
+      setActiveConversation(updatedConversation);
+      writeConversationCache(activeConversationId, {
+        conversation: updatedConversation
+      });
       setProfileModalOpen(false);
       await loadConversations();
       message.success("群资料已更新");
@@ -1032,11 +1043,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       reportError(error, "更新群资料失败");
     }
   }, [
+    activeConversation,
     activeConversationId,
     loadConversations,
     message,
     profileForm,
-    reportError
+    reportError,
+    writeConversationCache
   ]);
 
   const handleRemoveMember = useCallback(async (userId: number): Promise<void> => {
@@ -1052,6 +1065,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         user_id: userId
       });
 
+      await loadConversations();
       await loadActiveConversation(activeConversationId);
       message.success("成员已移除");
     } catch (error) {
@@ -1060,6 +1074,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   }, [
     activeConversationId,
     loadActiveConversation,
+    loadConversations,
     message,
     reportError
   ]);
@@ -1400,6 +1415,62 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     reportError
   ]);
 
+  const reconcileChangedConversation = useCallback(async (conversationId: number): Promise<void> => {
+    if (isLoggingOutRef.current) {
+      return;
+    }
+
+    try {
+      const refreshedConversations = await loadConversations();
+
+      if (isLoggingOutRef.current) {
+        return;
+      }
+
+      const remainsAccessible = refreshedConversations.some(conversation => {
+        return conversation.id === conversationId;
+      });
+
+      if (!remainsAccessible) {
+        conversationCacheRef.current.delete(conversationId);
+
+        if (activeConversationId === conversationId) {
+          activeConversationRequestRef.current += 1;
+          preloadedConversationIdRef.current = null;
+          setConversationOpening(false);
+          setContactListVisible(true);
+          setActiveConversationId(null);
+          setActiveConversation(null);
+          setMessages([]);
+          setHasMoreMessages(false);
+          setSearchResults([]);
+          setDetailsOpen(false);
+          setMemberModalOpen(false);
+          setProfileModalOpen(false);
+          nextBeforeMessageIdRef.current = null;
+          navigate("/", {
+            replace: true
+          });
+        }
+
+        return;
+      }
+
+      if (activeConversationId === conversationId) {
+        await loadActiveConversation(conversationId);
+      }
+    } catch (error) {
+      reportError(error, "同步会话变更失败");
+    }
+  }, [
+    activeConversationId,
+    conversationCacheRef,
+    loadActiveConversation,
+    loadConversations,
+    navigate,
+    reportError
+  ]);
+
   useEffect(() => {
     isLoggingOutRef.current = false;
 
@@ -1586,6 +1657,16 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
       return;
     }
 
+    if (wsEvent?.type === "conversation.changed") {
+      const change = pickWsConversationChanged(wsEvent.payload);
+
+      if (change) {
+        void reconcileChangedConversation(change.conversation_id);
+      }
+
+      return;
+    }
+
     const realtimeMessage = pickWsMessage(wsEvent?.payload);
 
     if (wsEvent?.type === "error") {
@@ -1697,6 +1778,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     lastEvent,
     rememberAckedMessage,
     refreshAllUserList,
+    reconcileChangedConversation,
     reportError,
     scheduleConversationRefresh,
     writeConversationCache

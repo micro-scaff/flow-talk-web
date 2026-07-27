@@ -3,6 +3,7 @@ import {
   dataMarkMessageRead
 } from "~/api";
 import type {
+  IDataConversationChanged,
   IDataListUsers,
   IDataMessage,
   IDataPresence
@@ -36,6 +37,24 @@ interface IPendingMessage {
   conversationId: number;
   messageType: IDataMessage["message_type"];
   timeoutId?: number;
+}
+
+function pickWsConversationChanged(payload: unknown): IDataConversationChanged | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  if (!("conversation_id" in payload) || !("change_type" in payload)) {
+    return null;
+  }
+
+  const change = payload as Partial<IDataConversationChanged>;
+
+  if (typeof change.conversation_id !== "number" || !Number.isSafeInteger(change.conversation_id) || change.conversation_id <= 0 || typeof change.change_type !== "string") {
+    return null;
+  }
+
+  return change as IDataConversationChanged;
 }
 
 function getFileExtension(filename: string): string {
@@ -183,6 +202,7 @@ export {
   markIncomingMessagesRead,
   mergeMessagePage,
   MESSAGE_ACK_TIMEOUT_MS,
+  pickWsConversationChanged,
   pickUploadResourceType,
   pickWsPresence,
   pickWsUnreadState,

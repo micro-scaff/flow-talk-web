@@ -78,6 +78,11 @@ export interface IDataReadState {
   ["unread_count"]?: number;
 }
 
+export interface IDataConversationChanged {
+  ["change_type"]: "members" | "profile" | string;
+  ["conversation_id"]: number;
+}
+
 export interface IDataDevicePayload {
   ["app_version"]?: unknown;
   ["device_id"]?: unknown;
