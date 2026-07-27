@@ -144,6 +144,8 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
 
   const activeConversationRequestRef = useRef(0);
 
+  const messageSearchRequestRef = useRef(0);
+
   const preloadedConversationIdRef = useRef<number | null>(null);
 
   const reconcileInFlightRef = useRef<Promise<void> | null>(null);
@@ -763,6 +765,13 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleSelectConversation = useCallback(async (conversationId: number): Promise<void> => {
+
+    // 消息搜索结果只属于发起搜索时的会话；切换会话前立即清空，避免路由
+    // 更新和异步详情加载之间短暂展示上一会话的内容。
+    messageSearchRequestRef.current += 1;
+    setSearchResults([]);
+    setSearchText("");
+
     const hasCachedConversation = applyConversationCache(conversationId);
 
     const conversationSummary = conversationsRef.current.find(conversation => {
@@ -1291,6 +1300,10 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
   ]);
 
   const handleSearch = useCallback(async (): Promise<void> => {
+    const requestSequence = messageSearchRequestRef.current + 1;
+
+    messageSearchRequestRef.current = requestSequence;
+
     if (!searchText.trim()) {
       setSearchResults([]);
 
@@ -1304,12 +1317,20 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
         limit: 20
       });
 
+      if (messageSearchRequestRef.current !== requestSequence) {
+        return;
+      }
+
       setSearchResults(results);
 
       if (results.length === 0) {
         message.info("未找到相关消息");
       }
     } catch (error) {
+      if (messageSearchRequestRef.current !== requestSequence) {
+        return;
+      }
+
       reportError(error, "消息搜索失败");
     }
   }, [
@@ -1542,13 +1563,14 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     const routeConversationId = parsedConversationId && Number.isSafeInteger(parsedConversationId) && parsedConversationId > 0 ? parsedConversationId : null;
 
     setContactListVisible(routeConversationId === null);
+    messageSearchRequestRef.current += 1;
+    setSearchResults([]);
+    setSearchText("");
 
     setActiveConversationId(currentConversationId => {
       if (routeConversationId === currentConversationId) {
         return currentConversationId;
       }
-
-      setSearchResults([]);
 
       return routeConversationId;
     });
