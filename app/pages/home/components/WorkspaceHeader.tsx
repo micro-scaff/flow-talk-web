@@ -2,7 +2,6 @@ import {
   ArrowLeftOutlined,
   InfoCircleOutlined,
   LaptopOutlined,
-  SearchOutlined,
   TeamOutlined
 } from "@ant-design/icons";
 import {
@@ -155,8 +154,7 @@ function WorkspaceHeader({
   } = viewModel;
 
   const [
-    mobileSearchOpen,
-    setMobileSearchOpen
+    mobileSearchOpen
   ] = useState(false);
 
   const hasActiveConversation = Boolean(state.activeConversationId);
@@ -282,20 +280,6 @@ function WorkspaceHeader({
           onSearch={() => {
             void actions.handleSearch();
           }} />
-
-        <Tooltip title={mobileSearchOpen ? "收起消息搜索" : "搜索消息"}>
-          <Button
-            aria-expanded={mobileSearchOpen}
-            aria-label={mobileSearchOpen ? "收起消息搜索" : "搜索消息"}
-            className="flow-icon-button flow-mobile-search-button"
-            icon={<SearchOutlined />}
-            shape="circle"
-            onClick={() => {
-              setMobileSearchOpen(current => {
-                return !current;
-              });
-            }} />
-        </Tooltip>
 
         <Tooltip title="设备管理">
           <Button
