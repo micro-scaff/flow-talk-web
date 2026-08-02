@@ -1,5 +1,6 @@
 import {
-  ReloadOutlined
+  ReloadOutlined,
+  UndoOutlined
 } from "@ant-design/icons";
 import {
   Avatar,
@@ -49,8 +50,6 @@ function MessageRow({
 
   const isMine = message.sender_id === state.currentUser?.id;
 
-  const recallTouchTimerRef = useRef<number | null>(null);
-
   const recallConfirmOpenRef = useRef(false);
 
   const canRecallMessage = isMine && message.id > 0 && message.status === "normal";
@@ -63,22 +62,15 @@ function MessageRow({
 
   const messageName = getUserName(messageUser);
 
-  const messageAvatar = (
-    <Avatar
-      className="shrink-0 font-bold"
-      size={32}
-      src={messageUser?.avatar_url || undefined}>
-      {messageName.slice(0, 1)}
-    </Avatar>
-  );
-
-  function clearRecallTouchTimer(): void {
-    if (recallTouchTimerRef.current === null) {
-      return;
-    }
-
-    window.clearTimeout(recallTouchTimerRef.current);
-    recallTouchTimerRef.current = null;
+  function renderMessageAvatar(): ReactElement {
+    return (
+      <Avatar
+        className="flow-message-avatar shrink-0 font-bold"
+        size={32}
+        src={messageUser?.avatar_url || undefined}>
+        {messageName.slice(0, 1)}
+      </Avatar>
+    );
   }
 
   function confirmRecallMessage(): void {
@@ -89,7 +81,7 @@ function MessageRow({
     recallConfirmOpenRef.current = true;
     Modal.confirm({
       cancelText: "取消",
-      content: "撤回后，这条消息会从聊天记录和搜索结果中隐藏，但数据库仍会保留原始内容。",
+      content: "撤回后，这条消息会从聊天记录删除。",
       okText: "撤回",
       okType: "danger",
       title: "确认撤回这条消息？",
@@ -104,9 +96,9 @@ function MessageRow({
 
   return (
     <div className={`flow-message-row ${isMine ? "is-mine justify-end" : "is-peer justify-start"} flex items-end gap-2`}>
-      {!isMine && messageAvatar}
+      {!isMine && renderMessageAvatar()}
 
-      <div className={`flow-message-group group ${isMine ? "items-end" : "items-start"} flex flex-col`}>
+      <div className={`flow-message-group group ${isMine ? "is-mine items-end" : "is-peer items-start"} flex flex-col`}>
         <Text className={`flow-message-meta mb-1 text-xs ${message.status === "failed" ? "is-failed" : ""} ${isMine ? "text-right" : ""}`}>
           {messageName}
           {" · "}
@@ -115,45 +107,54 @@ function MessageRow({
           {message.status === "failed" && " · 发送失败"}
         </Text>
 
-        <div
-          className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${message.status === "failed" ? "is-failed" : ""} ${canRecallMessage ? "is-recallable" : ""}`}
-          role={canRecallMessage ? "button" : undefined}
-          tabIndex={canRecallMessage ? 0 : undefined}
-          title={canRecallMessage ? "右键或长按撤回消息" : undefined}
-          onContextMenu={event => {
-            if (!canRecallMessage) {
-              return;
-            }
+        <div className={`flow-message-bubble-line ${isMine ? "is-mine" : "is-peer"}`}>
+          {canRecallMessage && (
+            <Button
+              aria-label="撤回消息"
+              className="flow-message-recall-mobile"
+              icon={<UndoOutlined />}
+              shape="circle"
+              size="small"
+              title="撤回消息"
+              type="text"
+              onClick={confirmRecallMessage}
+              onTouchStart={event => {
+                event.stopPropagation();
+              }} />
+          )}
 
-            event.preventDefault();
-            confirmRecallMessage();
-          }}
-          onKeyDown={event => {
-            if (
-              !canRecallMessage ||
-              (event.key !== "Enter" && event.key !== " " && event.key !== "Delete" && event.key !== "Backspace")
-            ) {
-              return;
-            }
+          <div
+            className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${message.status === "failed" ? "is-failed" : ""} ${canRecallMessage ? "is-recallable" : ""}`}
+            role={canRecallMessage ? "button" : undefined}
+            tabIndex={canRecallMessage ? 0 : undefined}
+            title={canRecallMessage ? "右键撤回消息" : undefined}
+            onContextMenu={event => {
+              if (!canRecallMessage) {
+                return;
+              }
 
-            event.preventDefault();
-            confirmRecallMessage();
-          }}
-          onTouchCancel={clearRecallTouchTimer}
-          onTouchEnd={clearRecallTouchTimer}
-          onTouchMove={clearRecallTouchTimer}
-          onTouchStart={() => {
-            if (!canRecallMessage) {
-              return;
-            }
-
-            clearRecallTouchTimer();
-            recallTouchTimerRef.current = window.setTimeout(() => {
-              recallTouchTimerRef.current = null;
+              event.preventDefault();
               confirmRecallMessage();
-            }, 650);
-          }}>
-          {renderMessageContent(message)}
+            }}
+            onKeyDown={event => {
+              if (
+                !canRecallMessage ||
+                (event.key !== "Enter" && event.key !== " " && event.key !== "Delete" && event.key !== "Backspace")
+              ) {
+                return;
+              }
+
+              event.preventDefault();
+              confirmRecallMessage();
+            }}>
+            {renderMessageContent(message)}
+          </div>
+
+          {isMine && (
+            <span className="flow-message-mobile-avatar">
+              {renderMessageAvatar()}
+            </span>
+          )}
         </div>
 
         {message.status === "failed" && (
@@ -170,7 +171,7 @@ function MessageRow({
         )}
       </div>
 
-      {isMine && messageAvatar}
+      {isMine && renderMessageAvatar()}
     </div>
   );
 }

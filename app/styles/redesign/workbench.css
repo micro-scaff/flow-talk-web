@@ -1214,6 +1214,10 @@
   color: var(--flow-text) !important;
 }
 
+.flow-message-mobile-avatar {
+  display: none;
+}
+
 .flow-message-meta.ant-typography,
 .flow-chat-empty-support.ant-typography,
 .flow-contact-empty {
@@ -1316,6 +1320,25 @@
   max-width: min(78%, 640px);
 }
 
+.flow-message-group.is-mine .flow-message-meta {
+  align-self: flex-end;
+  text-align: right;
+}
+
+.flow-message-bubble-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.flow-message-bubble-line.is-mine {
+  justify-content: flex-end;
+}
+
+.flow-message-bubble-line.is-peer {
+  justify-content: flex-start;
+}
+
 .flow-message-bubble {
   padding: 10px 14px;
   border: 1px solid var(--flow-border-soft);
@@ -1336,9 +1359,75 @@
   cursor: context-menu;
 }
 
+.flow-message-recall-mobile.ant-btn {
+  display: none;
+}
+
 .flow-message-bubble.is-recallable:focus-visible {
   outline: 3px solid var(--flow-focus);
   outline-offset: 3px;
+}
+
+@media (max-width: 768px) {
+  .flow-message-row {
+    gap: 6px;
+  }
+
+  .flow-message-row.is-mine {
+    justify-content: flex-end;
+  }
+
+  .flow-message-row.is-mine .ant-avatar {
+    width: 30px !important;
+    min-width: 30px;
+    height: 30px !important;
+    flex: 0 0 30px;
+    font-size: 13px;
+  }
+
+  .flow-message-row.is-mine > .flow-message-avatar {
+    display: none;
+  }
+
+  .flow-message-group {
+    min-width: 0;
+    max-width: calc(100% - 42px);
+  }
+
+  .flow-message-group.is-mine {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .flow-message-bubble-line.is-mine {
+    width: 100%;
+  }
+
+  .flow-message-mobile-avatar {
+    display: inline-flex;
+    flex: 0 0 30px;
+  }
+
+  .flow-message-recall-mobile.ant-btn {
+    width: 28px;
+    min-width: 28px;
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 28px;
+    border: 1px solid color-mix(in srgb, var(--flow-border-soft) 80%, transparent);
+    background: color-mix(in srgb, var(--flow-surface-elevated) 94%, transparent);
+    box-shadow: var(--flow-shadow-soft);
+    color: var(--flow-muted);
+  }
+
+  .flow-message-recall-mobile.ant-btn:active,
+  .flow-message-recall-mobile.ant-btn:hover {
+    border-color: color-mix(in srgb, #d1432f 45%, transparent);
+    background: color-mix(in srgb, #d1432f 10%, var(--flow-surface-elevated));
+    color: #d1432f;
+  }
 }
 
 .flow-message-meta.is-failed {
