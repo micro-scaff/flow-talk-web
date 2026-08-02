@@ -4,10 +4,14 @@ import {
 import {
   Avatar,
   Button,
+  Modal,
   Typography
 } from "antd";
 import type {
   ReactElement
+} from "react";
+import {
+  useRef
 } from "react";
 
 import type {
@@ -45,6 +49,12 @@ function MessageRow({
 
   const isMine = message.sender_id === state.currentUser?.id;
 
+  const recallTouchTimerRef = useRef<number | null>(null);
+
+  const recallConfirmOpenRef = useRef(false);
+
+  const canRecallMessage = isMine && message.id > 0 && message.status === "normal";
+
   const sender = state.users.find(user => {
     return user.id === message.sender_id;
   });
@@ -62,6 +72,36 @@ function MessageRow({
     </Avatar>
   );
 
+  function clearRecallTouchTimer(): void {
+    if (recallTouchTimerRef.current === null) {
+      return;
+    }
+
+    window.clearTimeout(recallTouchTimerRef.current);
+    recallTouchTimerRef.current = null;
+  }
+
+  function confirmRecallMessage(): void {
+    if (!canRecallMessage || recallConfirmOpenRef.current) {
+      return;
+    }
+
+    recallConfirmOpenRef.current = true;
+    Modal.confirm({
+      cancelText: "取消",
+      content: "撤回后，这条消息会从聊天记录和搜索结果中隐藏，但数据库仍会保留原始内容。",
+      okText: "撤回",
+      okType: "danger",
+      title: "确认撤回这条消息？",
+      afterClose() {
+        recallConfirmOpenRef.current = false;
+      },
+      onOk() {
+        return actions.handleRecallMessage(message);
+      }
+    });
+  }
+
   return (
     <div className={`flow-message-row ${isMine ? "is-mine justify-end" : "is-peer justify-start"} flex items-end gap-2`}>
       {!isMine && messageAvatar}
@@ -75,7 +115,44 @@ function MessageRow({
           {message.status === "failed" && " · 发送失败"}
         </Text>
 
-        <div className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${message.status === "failed" ? "is-failed" : ""}`}>
+        <div
+          className={`flow-message-bubble ${isMine ? "is-mine" : ""} ${message.status === "failed" ? "is-failed" : ""} ${canRecallMessage ? "is-recallable" : ""}`}
+          role={canRecallMessage ? "button" : undefined}
+          tabIndex={canRecallMessage ? 0 : undefined}
+          title={canRecallMessage ? "右键或长按撤回消息" : undefined}
+          onContextMenu={event => {
+            if (!canRecallMessage) {
+              return;
+            }
+
+            event.preventDefault();
+            confirmRecallMessage();
+          }}
+          onKeyDown={event => {
+            if (
+              !canRecallMessage ||
+              (event.key !== "Enter" && event.key !== " " && event.key !== "Delete" && event.key !== "Backspace")
+            ) {
+              return;
+            }
+
+            event.preventDefault();
+            confirmRecallMessage();
+          }}
+          onTouchCancel={clearRecallTouchTimer}
+          onTouchEnd={clearRecallTouchTimer}
+          onTouchMove={clearRecallTouchTimer}
+          onTouchStart={() => {
+            if (!canRecallMessage) {
+              return;
+            }
+
+            clearRecallTouchTimer();
+            recallTouchTimerRef.current = window.setTimeout(() => {
+              recallTouchTimerRef.current = null;
+              confirmRecallMessage();
+            }, 650);
+          }}>
           {renderMessageContent(message)}
         </div>
 

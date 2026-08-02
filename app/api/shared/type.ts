@@ -6,7 +6,7 @@ export type TConversationMemberStatus = "active" | "removed" | "left";
 
 export type TMessageType = "text" | "image" | "video" | "file" | string;
 
-export type TMessageStatus = "normal" | "sending" | "failed" | string;
+export type TMessageStatus = "normal" | "recalled" | "sending" | "failed" | string;
 
 export interface IDataUser {
   ["auth_source"]?: string;
@@ -79,7 +79,7 @@ export interface IDataReadState {
 }
 
 export interface IDataConversationChanged {
-  ["change_type"]: "members" | "profile" | string;
+  ["change_type"]: "members" | "message" | "profile" | string;
   ["conversation_id"]: number;
 }
 

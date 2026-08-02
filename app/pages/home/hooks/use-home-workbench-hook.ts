@@ -28,6 +28,7 @@ import {
   dataMarkConversationRead,
   dataMessageList,
   dataMessageSearch,
+  dataRecallMessage,
   dataRemoveGroupMember,
   dataSendMessage,
   dataUpdateGroupProfile,
@@ -1299,6 +1300,44 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     sendMessageByHttp
   ]);
 
+  const handleRecallMessage = useCallback(async (messageItem: IDataMessage): Promise<void> => {
+    if (
+      !messageItem.id ||
+      messageItem.id <= 0 ||
+      messageItem.sender_id !== currentUser?.id ||
+      messageItem.status !== "normal"
+    ) {
+      return;
+    }
+
+    try {
+      await dataRecallMessage({
+        message_id: messageItem.id
+      });
+
+      setMessages(currentMessages => {
+        return currentMessages.filter(item => {
+          return item.id !== messageItem.id;
+        });
+      });
+      setSearchResults(currentResults => {
+        return currentResults.filter(item => {
+          return item.id !== messageItem.id;
+        });
+      });
+
+      await loadConversations();
+      message.success("消息已撤回");
+    } catch (error) {
+      reportError(error, "撤回消息失败");
+    }
+  }, [
+    currentUser?.id,
+    loadConversations,
+    message,
+    reportError
+  ]);
+
   const handleSearch = useCallback(async (): Promise<void> => {
     const requestSequence = messageSearchRequestRef.current + 1;
 
@@ -1886,6 +1925,7 @@ function useHomeWorkbenchHook(): IHomeWorkbenchViewModel {
     handleLogout,
     handleOpenGroupProfile,
     handleRefresh,
+    handleRecallMessage,
     handleRemoveMember,
     handleSearch,
     handleSelectConversation,

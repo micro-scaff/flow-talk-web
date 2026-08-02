@@ -1332,6 +1332,15 @@
   color: var(--flow-primary-contrast);
 }
 
+.flow-message-bubble.is-recallable {
+  cursor: context-menu;
+}
+
+.flow-message-bubble.is-recallable:focus-visible {
+  outline: 3px solid var(--flow-focus);
+  outline-offset: 3px;
+}
+
 .flow-message-meta.is-failed {
   color: #d1432f !important;
   font-weight: 800;
@@ -1532,4 +1541,3 @@
 .flow-user-mobile-status {
   display: none;
 }
-

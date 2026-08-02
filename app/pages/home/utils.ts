@@ -131,6 +131,10 @@ function isVideoMessage(messageItem: IDataMessage): boolean {
 }
 
 function isRenderableMessage(messageItem: IDataMessage): boolean {
+  if (messageItem.status === "recalled") {
+    return false;
+  }
+
   return isTextMessage(messageItem) || isImageMessage(messageItem) || isFileMessage(messageItem) || isVideoMessage(messageItem);
 }
 

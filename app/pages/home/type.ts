@@ -93,6 +93,7 @@ export interface IHomeWorkbenchActions {
   handleOpenGroupProfile: () => void;
   handleOpenSearchResult: (message: IDataMessage) => void;
   handleRefresh: () => Promise<void>;
+  handleRecallMessage: (message: IDataMessage) => Promise<void>;
   handleRemoveMember: (userId: number) => Promise<void>;
   handleSearch: () => Promise<void>;
   handleSelectConversation: (conversationId: number) => Promise<void>;

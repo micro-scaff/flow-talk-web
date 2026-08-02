@@ -18,6 +18,7 @@ export * from "./data-message-list";
 export * from "./data-message-receipts";
 export * from "./data-message-search";
 export * from "./data-presence";
+export * from "./data-recall-message";
 export * from "./data-remove-group-member";
 export * from "./data-send-message";
 export * from "./data-update-group-profile";
