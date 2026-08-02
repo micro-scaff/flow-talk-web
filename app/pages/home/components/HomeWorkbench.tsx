@@ -49,36 +49,60 @@ function HomeWorkbench({
   useEffect(() => {
     const root = document.documentElement;
 
+    let viewportSyncFrame: number | null = null;
+
     const syncWorkbenchViewport = (): void => {
+      viewportSyncFrame = null;
+
       const {
         visualViewport
       } = window;
 
       const viewportWidth = Math.floor(visualViewport?.width || window.innerWidth);
 
-      const viewportHeight = Math.floor(visualViewport?.height || window.innerHeight);
+      const layoutViewportHeight = Math.floor(window.innerHeight);
+
+      const visibleViewportHeight = Math.floor(visualViewport?.height || layoutViewportHeight);
+
+      const viewportTop = Math.floor(visualViewport?.offsetTop || 0);
 
       const viewportLeft = Math.floor(visualViewport?.offsetLeft || 0);
 
+      const keyboardInset = Math.max(0, layoutViewportHeight - visibleViewportHeight - viewportTop);
+
       root.style.setProperty("--flow-viewport-width", `${viewportWidth}px`);
-      root.style.setProperty("--flow-viewport-height", `${viewportHeight}px`);
+      root.style.setProperty("--flow-viewport-height", `${layoutViewportHeight}px`);
+      root.style.setProperty("--flow-visible-viewport-height", `${visibleViewportHeight}px`);
       root.style.setProperty("--flow-viewport-left", `${viewportLeft}px`);
+      root.style.setProperty("--flow-keyboard-inset", `${keyboardInset}px`);
     };
 
-    const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(syncWorkbenchViewport);
+    const scheduleWorkbenchViewportSync = (): void => {
+      if (viewportSyncFrame !== null) {
+        return;
+      }
+
+      viewportSyncFrame = window.requestAnimationFrame(syncWorkbenchViewport);
+    };
 
     syncWorkbenchViewport();
-    resizeObserver?.observe(root);
-    window.visualViewport?.addEventListener("resize", syncWorkbenchViewport);
-    window.visualViewport?.addEventListener("scroll", syncWorkbenchViewport);
+    window.visualViewport?.addEventListener("resize", scheduleWorkbenchViewportSync);
+    window.visualViewport?.addEventListener("scroll", scheduleWorkbenchViewportSync);
+    window.addEventListener("resize", scheduleWorkbenchViewportSync);
 
     return () => {
-      resizeObserver?.disconnect();
-      window.visualViewport?.removeEventListener("resize", syncWorkbenchViewport);
-      window.visualViewport?.removeEventListener("scroll", syncWorkbenchViewport);
+      if (viewportSyncFrame !== null) {
+        window.cancelAnimationFrame(viewportSyncFrame);
+      }
+
+      window.visualViewport?.removeEventListener("resize", scheduleWorkbenchViewportSync);
+      window.visualViewport?.removeEventListener("scroll", scheduleWorkbenchViewportSync);
+      window.removeEventListener("resize", scheduleWorkbenchViewportSync);
       root.style.removeProperty("--flow-viewport-width");
       root.style.removeProperty("--flow-viewport-height");
+      root.style.removeProperty("--flow-visible-viewport-height");
       root.style.removeProperty("--flow-viewport-left");
+      root.style.removeProperty("--flow-keyboard-inset");
     };
   }, []);
 

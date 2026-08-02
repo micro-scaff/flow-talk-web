@@ -41,102 +41,63 @@ export function AuthShell({
   useEffect(() => {
     const root = document.documentElement;
 
-    const listenerOptions = {
-      capture: true
-    };
-
-    let resetTimeoutIds: number[] = [];
+    let viewportSyncFrame: number | null = null;
 
     document.body.dataset.authRoute = "true";
     root.dataset.authRoute = "true";
 
     const syncAuthViewport = (): void => {
+      viewportSyncFrame = null;
+
       const {
         visualViewport
       } = window;
 
       const viewportWidth = Math.floor(visualViewport?.width || window.innerWidth);
 
-      const viewportHeight = Math.floor(visualViewport?.height || window.innerHeight);
+      const layoutViewportHeight = Math.floor(window.innerHeight);
+
+      const visibleViewportHeight = Math.floor(visualViewport?.height || layoutViewportHeight);
+
+      const viewportTop = Math.floor(visualViewport?.offsetTop || 0);
 
       const viewportLeft = Math.floor(visualViewport?.offsetLeft || 0);
 
+      const keyboardInset = Math.max(0, layoutViewportHeight - visibleViewportHeight - viewportTop);
+
       root.style.setProperty("--auth-viewport-width", `${viewportWidth}px`);
-      root.style.setProperty("--auth-viewport-height", `${viewportHeight}px`);
+      root.style.setProperty("--auth-viewport-height", `${layoutViewportHeight}px`);
+      root.style.setProperty("--auth-visible-viewport-height", `${visibleViewportHeight}px`);
       root.style.setProperty("--auth-viewport-left", `${viewportLeft}px`);
+      root.style.setProperty("--auth-keyboard-inset", `${keyboardInset}px`);
     };
 
-    const clearScheduledResets = (): void => {
-      for (const timeoutId of resetTimeoutIds) {
-        window.clearTimeout(timeoutId);
-      }
-
-      resetTimeoutIds = [];
-    };
-
-    const resetHorizontalScroll = (): void => {
-      syncAuthViewport();
-
-      const authPage = document.querySelector<HTMLElement>(".auth-page");
-
-      const appRoot = document.querySelector<HTMLElement>("#root");
-
-      root.scrollLeft = 0;
-      document.body.scrollLeft = 0;
-      appRoot?.scrollTo({
-        left: 0,
-        top: appRoot.scrollTop
-      });
-      authPage?.scrollTo({
-        left: 0,
-        top: authPage.scrollTop
-      });
-      window.scrollTo({
-        left: 0,
-        top: window.scrollY
-      });
-    };
-
-    const scheduleResetHorizontalScroll = (): void => {
-      clearScheduledResets();
-      syncAuthViewport();
-      resetHorizontalScroll();
-
-      for (const delay of [
-        0,
-        80,
-        180,
-        360
-      ]) {
-        const timeoutId = window.setTimeout(resetHorizontalScroll, delay);
-
-        resetTimeoutIds.push(timeoutId);
-      }
-    };
-
-    const handleFocusIn = (event: FocusEvent): void => {
-      if (!(event.target instanceof HTMLElement) || !event.target.closest(".auth-page")) {
+    const scheduleAuthViewportSync = (): void => {
+      if (viewportSyncFrame !== null) {
         return;
       }
 
-      scheduleResetHorizontalScroll();
+      viewportSyncFrame = window.requestAnimationFrame(syncAuthViewport);
     };
 
     syncAuthViewport();
-    document.addEventListener("focusin", handleFocusIn, listenerOptions);
-    window.visualViewport?.addEventListener("resize", scheduleResetHorizontalScroll);
-    window.visualViewport?.addEventListener("scroll", scheduleResetHorizontalScroll);
-    window.addEventListener("resize", scheduleResetHorizontalScroll);
+    window.visualViewport?.addEventListener("resize", scheduleAuthViewportSync);
+    window.visualViewport?.addEventListener("scroll", scheduleAuthViewportSync);
+    window.addEventListener("resize", scheduleAuthViewportSync);
 
     return () => {
-      clearScheduledResets();
-      document.removeEventListener("focusin", handleFocusIn, listenerOptions);
-      window.visualViewport?.removeEventListener("resize", scheduleResetHorizontalScroll);
-      window.visualViewport?.removeEventListener("scroll", scheduleResetHorizontalScroll);
-      window.removeEventListener("resize", scheduleResetHorizontalScroll);
+      if (viewportSyncFrame !== null) {
+        window.cancelAnimationFrame(viewportSyncFrame);
+      }
+
+      window.visualViewport?.removeEventListener("resize", scheduleAuthViewportSync);
+      window.visualViewport?.removeEventListener("scroll", scheduleAuthViewportSync);
+      window.removeEventListener("resize", scheduleAuthViewportSync);
       root.style.removeProperty("--auth-viewport-width");
       root.style.removeProperty("--auth-viewport-height");
+      root.style.removeProperty("--auth-visible-viewport-height");
       root.style.removeProperty("--auth-viewport-left");
+      root.style.removeProperty("--auth-keyboard-inset");
       delete document.body.dataset.authRoute;
       delete root.dataset.authRoute;
     };
